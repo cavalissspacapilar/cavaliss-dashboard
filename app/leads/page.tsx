@@ -1,17 +1,26 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Target, TrendingUp, Clock, DollarSign } from "lucide-react";
 import KanbanBoard from "@/components/leads/KanbanBoard";
 import { LEADS } from "@/lib/data";
+import { fetchLeads } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
+import type { Lead } from "@/lib/types";
 
 export default function LeadsPage() {
-  const total = LEADS.length;
-  const converted = LEADS.filter(l => l.status === "Convertido").length;
-  const convRate = Math.round((converted / total) * 100);
-  const avgDays = Math.round(LEADS.reduce((s, l) => s + l.daysInPipeline, 0) / total);
-  const pipeline = LEADS.filter(l => !["Convertido", "Perdido"].includes(l.status));
+  const [leads, setLeads] = useState<Lead[]>(LEADS);
+
+  useEffect(() => {
+    fetchLeads().then(setLeads).catch(() => {});
+  }, []);
+
+  const total = leads.length;
+  const converted = leads.filter(l => l.status === "Convertido").length;
+  const convRate = total ? Math.round((converted / total) * 100) : 0;
+  const avgDays = total ? Math.round(leads.reduce((s, l) => s + l.daysInPipeline, 0) / total) : 0;
+  const pipeline = leads.filter(l => !["Convertido", "Perdido"].includes(l.status));
   const pipelineValue = pipeline.reduce((s, l) => s + l.estimatedValue, 0);
-  const hot = LEADS.filter(l => l.temperature === "caliente" && !["Convertido", "Perdido"].includes(l.status));
+  const hot = leads.filter(l => l.temperature === "caliente" && !["Convertido", "Perdido"].includes(l.status));
 
   return (
     <div className="space-y-6 max-w-[1600px]">
@@ -63,8 +72,8 @@ export default function LeadsPage() {
           { source: "Instagram", color: "border-purple-500/30 text-purple-400" },
           { source: "WhatsApp directo", color: "border-emerald-500/30 text-emerald-400" },
         ].map(s => {
-          const count = LEADS.filter(l => l.source === s.source).length;
-          const conv = LEADS.filter(l => l.source === s.source && l.status === "Convertido").length;
+          const count = leads.filter(l => l.source === s.source).length;
+          const conv = leads.filter(l => l.source === s.source && l.status === "Convertido").length;
           return (
             <div key={s.source} className={`glass-card border p-4 ${s.color.split(" ")[0]}`}>
               <p className={`text-sm font-semibold ${s.color.split(" ")[1]}`}>{s.source}</p>
@@ -78,7 +87,7 @@ export default function LeadsPage() {
       {/* Kanban */}
       <div>
         <h2 className="text-zinc-300 font-semibold text-sm mb-4">Board de leads</h2>
-        <KanbanBoard />
+        <KanbanBoard initialLeads={leads} />
       </div>
     </div>
   );

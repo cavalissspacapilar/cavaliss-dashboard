@@ -1,9 +1,8 @@
 "use client";
 import { useState } from "react";
-import { Search, Filter, Crown, Star, Sparkles } from "lucide-react";
-import { CLIENTS } from "@/lib/data";
+import { Search, Crown, Star, Sparkles } from "lucide-react";
 import { cn, getInitials, getAvatarColor, formatCurrency, isInactive } from "@/lib/utils";
-import type { ClientSegment } from "@/lib/types";
+import type { Client, ClientSegment } from "@/lib/types";
 
 const SEGMENT_STYLES: Record<ClientSegment, string> = {
   VIP: "bg-gold/15 text-gold border-gold/25",
@@ -17,12 +16,12 @@ const SEGMENT_ICONS: Record<ClientSegment, React.ElementType> = {
   Nueva: Sparkles,
 };
 
-export default function ClientsTable() {
+export default function ClientsTable({ clients }: { clients: Client[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ClientSegment | "Todas">("Todas");
   const [sortBy, setSortBy] = useState<"name" | "value" | "lastVisit">("value");
 
-  const filtered = CLIENTS.filter(c => {
+  const filtered = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.phone.includes(search) || c.lastService.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "Todas" || c.segment === filter;

@@ -1,13 +1,15 @@
 "use client";
+import { useState, useEffect } from "react";
 import { CalendarCheck, Clock, DollarSign, TrendingUp } from "lucide-react";
 import WeeklyCalendar from "@/components/citas/WeeklyCalendar";
 import HeatMap from "@/components/citas/HeatMap";
 import { APPOINTMENTS, SERVICES } from "@/lib/data";
+import { fetchCitas } from "@/lib/api-client";
 import { cn, formatCurrency } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import type { AppointmentStatus } from "@/lib/types";
+import type { AppointmentStatus, Appointment } from "@/lib/types";
 
-const TODAY = "2026-05-19";
+const TODAY = new Date().toISOString().split("T")[0];
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
   confirmada: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
@@ -44,7 +46,13 @@ function ServiceStats() {
 }
 
 export default function CitasPage() {
-  const todayAppts = APPOINTMENTS.filter(a => a.date === TODAY).sort((a, b) => a.time.localeCompare(b.time));
+  const [appointments, setAppointments] = useState<Appointment[]>(APPOINTMENTS);
+
+  useEffect(() => {
+    fetchCitas().then(setAppointments).catch(() => {});
+  }, []);
+
+  const todayAppts = appointments.filter(a => a.date === TODAY).sort((a, b) => a.time.localeCompare(b.time));
   const totalToday = todayAppts.reduce((s, a) => s + a.price, 0);
   const confirmed = todayAppts.filter(a => a.status === "confirmada").length;
   const occupancy = Math.round((todayAppts.length / 10) * 100);

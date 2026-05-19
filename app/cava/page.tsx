@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, Send, Zap, Users, CheckCircle, Clock } from "lucide-react";
 import { CAVA_CONVERSATIONS } from "@/lib/data";
+import { fetchConversaciones } from "@/lib/api-client";
 import { cn, getInitials, getAvatarColor } from "@/lib/utils";
 import type { CavaConversation } from "@/lib/types";
 
@@ -163,15 +164,23 @@ function ConversationDetail({ conv }: { conv: CavaConversation | null }) {
 }
 
 export default function CavaPage() {
+  const [conversations, setConversations] = useState<CavaConversation[]>(CAVA_CONVERSATIONS);
   const [selected, setSelected] = useState<CavaConversation | null>(CAVA_CONVERSATIONS[0]);
   const [statusFilter, setStatusFilter] = useState<"todas" | "activa" | "esperando" | "resuelta">("todas");
 
-  const activas = CAVA_CONVERSATIONS.filter(c => c.status === "activa").length;
-  const typing = CAVA_CONVERSATIONS.filter(c => c.isTyping).length;
-  const leadsHoy = 8;
-  const reservasCerradas = 3;
+  useEffect(() => {
+    fetchConversaciones().then(data => {
+      setConversations(data);
+      setSelected(data[0] ?? null);
+    }).catch(() => {});
+  }, []);
 
-  const filtered = CAVA_CONVERSATIONS.filter(c => statusFilter === "todas" || c.status === statusFilter);
+  const activas = conversations.filter(c => c.status === "activa").length;
+  const typing = conversations.filter(c => c.isTyping).length;
+  const leadsHoy = conversations.filter(c => c.status !== "resuelta").length;
+  const reservasCerradas = conversations.filter(c => c.status === "resuelta").length;
+
+  const filtered = conversations.filter(c => statusFilter === "todas" || c.status === statusFilter);
 
   return (
     <div className="space-y-6 max-w-[1400px]">

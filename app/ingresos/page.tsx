@@ -1,10 +1,12 @@
 "use client";
+import { useState, useEffect } from "react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, Cell, CartesianGrid,
 } from "recharts";
 import { DollarSign, TrendingUp, AlertCircle, Calendar } from "lucide-react";
-import { MONTHLY_SUMMARY, SERVICES } from "@/lib/data";
+import { MONTHLY_SUMMARY } from "@/lib/data";
+import { fetchIngresos } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
 
 const SERVICE_COLORS = ["#D4A017", "#A855F7", "#F43F5E", "#3B82F6", "#14B8A6", "#8B5CF6", "#F97316", "#10B981", "#0EA5E9"];
@@ -20,8 +22,14 @@ function CustomBarTooltip({ active, payload, label }: { active?: boolean; payloa
 }
 
 export default function IngresosPage() {
-  const { currentMonth, previousMonth, target, weeklyData, byService, pendingDeposits } = MONTHLY_SUMMARY;
-  const growth = Math.round(((currentMonth - previousMonth) / previousMonth) * 100);
+  const [summary, setSummary] = useState(MONTHLY_SUMMARY);
+
+  useEffect(() => {
+    fetchIngresos().then(d => setSummary(d.summary)).catch(() => {});
+  }, []);
+
+  const { currentMonth, previousMonth, target, weeklyData, byService, pendingDeposits } = summary;
+  const growth = previousMonth ? Math.round(((currentMonth - previousMonth) / previousMonth) * 100) : 0;
   const targetPct = Math.round((currentMonth / target) * 100);
   const projectedEnd = Math.round(currentMonth * 1.18);
 

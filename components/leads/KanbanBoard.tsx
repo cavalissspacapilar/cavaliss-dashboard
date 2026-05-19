@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LEADS } from "@/lib/data";
 import { cn, getTemperatureEmoji, formatCurrency, getAvatarColor, getInitials } from "@/lib/utils";
 import type { Lead, LeadStatus, LeadSource } from "@/lib/types";
@@ -67,8 +67,10 @@ function LeadCard({ lead, onDragStart }: { lead: Lead; onDragStart: (id: number)
   );
 }
 
-export default function KanbanBoard() {
-  const [leads, setLeads] = useState(LEADS);
+export default function KanbanBoard({ initialLeads = LEADS }: { initialLeads?: Lead[] }) {
+  const [leads, setLeads] = useState(initialLeads);
+
+  useEffect(() => { setLeads(initialLeads); }, [initialLeads]);
   const [dragging, setDragging] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<LeadStatus | null>(null);
 

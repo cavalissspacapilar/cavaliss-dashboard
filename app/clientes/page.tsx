@@ -1,28 +1,37 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Users, Crown, Star, Sparkles, AlertCircle } from "lucide-react";
 import ClientsTable from "@/components/clientes/ClientsTable";
 import { CLIENTS } from "@/lib/data";
+import { fetchClientes } from "@/lib/api-client";
 import { isInactive, formatCurrency } from "@/lib/utils";
+import type { Client } from "@/lib/types";
 
 export default function ClientesPage() {
-  const vip = CLIENTS.filter(c => c.segment === "VIP");
-  const regular = CLIENTS.filter(c => c.segment === "Regular");
-  const nueva = CLIENTS.filter(c => c.segment === "Nueva");
-  const inactive = CLIENTS.filter(c => isInactive(c.lastVisit));
-  const totalRevenue = CLIENTS.reduce((s, c) => s + c.totalValue, 0);
-  const avgValue = Math.round(totalRevenue / CLIENTS.length);
+  const [clients, setClients] = useState<Client[]>(CLIENTS);
+
+  useEffect(() => {
+    fetchClientes().then(setClients).catch(() => {});
+  }, []);
+
+  const vip = clients.filter(c => c.segment === "VIP");
+  const regular = clients.filter(c => c.segment === "Regular");
+  const nueva = clients.filter(c => c.segment === "Nueva");
+  const inactive = clients.filter(c => isInactive(c.lastVisit));
+  const totalRevenue = clients.reduce((s, c) => s + c.totalValue, 0);
+  const avgValue = clients.length ? Math.round(totalRevenue / clients.length) : 0;
 
   return (
     <div className="space-y-6 max-w-[1400px]">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">CRM — Clientas</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">{CLIENTS.length} clientas registradas en el sistema</p>
+        <p className="text-zinc-500 text-sm mt-0.5">{clients.length} clientas registradas en el sistema</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
         {[
-          { label: "Total clientas", value: CLIENTS.length, icon: Users, color: "text-zinc-300", bg: "bg-white/5" },
+          { label: "Total clientas", value: clients.length, icon: Users, color: "text-zinc-300", bg: "bg-white/5" },
           { label: "VIP", value: vip.length, icon: Crown, color: "text-gold", bg: "bg-gold/8" },
           { label: "Regulares", value: regular.length, icon: Star, color: "text-blue-400", bg: "bg-blue-500/8" },
           { label: "Nuevas", value: nueva.length, icon: Sparkles, color: "text-emerald-400", bg: "bg-emerald-500/8" },
@@ -56,7 +65,7 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      <ClientsTable />
+      <ClientsTable clients={clients} />
     </div>
   );
 }

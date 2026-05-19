@@ -1,10 +1,13 @@
 "use client";
+import { useState, useEffect } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  Tooltip, ResponsiveContainer,
 } from "recharts";
 import { REVENUE_DATA } from "@/lib/data";
+import { fetchIngresos } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
+import type { RevenueDataPoint } from "@/lib/types";
 
 const SERVICES = [
   { key: "Luminoplastia", color: "#EC4899" },
@@ -43,6 +46,12 @@ function formatXAxis(dateStr: string) {
 }
 
 export default function RevenueChart() {
+  const [data, setData] = useState<RevenueDataPoint[]>(REVENUE_DATA);
+
+  useEffect(() => {
+    fetchIngresos().then(d => setData(d.revenueData)).catch(() => {});
+  }, []);
+
   return (
     <div className="glass-card border border-white/7 p-6">
       <div className="flex items-center justify-between mb-6">
@@ -63,7 +72,7 @@ export default function RevenueChart() {
       </div>
 
       <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={REVENUE_DATA} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+        <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <defs>
             {SERVICES.map((s) => (
               <linearGradient key={s.key} id={`grad-${s.key.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
