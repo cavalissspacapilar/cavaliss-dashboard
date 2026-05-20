@@ -1,35 +1,44 @@
+import { google } from "googleapis";
+
 export type SheetRow = Record<string, string>;
 
+function getAuth() {
+  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  if (!keyJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY not set");
+
+  const key = JSON.parse(keyJson) as { client_email: string; private_key: string };
+
+  return new google.auth.JWT({
+    email: key.client_email,
+    key: key.private_key,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+  });
+}
+
 export async function fetchSheet(sheetName: string): Promise<SheetRow[]> {
-  const id = process.env.GOOGLE_SHEETS_ID;
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+  if (!spreadsheetId) throw new Error("GOOGLE_SHEETS_ID not set");
 
-  const res = await fetch(url, { next: { revalidate: 120 } });
-  if (!res.ok) throw new Error(`Sheets ${res.status} for tab "${sheetName}"`);
+  const auth = getAuth();
+  const sheets = google.sheets({ version: "v4", auth });
 
-  const text = await res.text();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: sheetName,
+  });
 
-  // Strip JSONP wrapper: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-  const jsonStr = text.replace(/^[^{]*/, "").replace(/\s*\);\s*$/, "");
-  const parsed = JSON.parse(jsonStr);
+  const values = res.data.values ?? [];
+  if (values.length < 2) return [];
 
-  if (parsed.status === "error") {
-    throw new Error(`Sheets error: ${parsed.errors?.[0]?.detailed_message ?? "unknown"}`);
-  }
+  const headers = (values[0] as string[]).map((h) => String(h ?? "").trim().toLowerCase());
 
-  const cols: string[] = (parsed.table?.cols ?? []).map(
-    (c: { label?: string; id?: string }) => (c.label?.trim() || c.id || "").toLowerCase()
-  );
-
-  const rows: SheetRow[] = (parsed.table?.rows ?? [])
-    .filter((r: { c: unknown[] }) => r?.c?.some(Boolean))
-    .map((r: { c: ({ v?: unknown } | null)[] }) => {
+  return (values.slice(1) as string[][])
+    .filter((row) => row.some(Boolean))
+    .map((row) => {
       const obj: SheetRow = {};
-      r.c.forEach((cell, i) => {
-        obj[cols[i]] = cell?.v != null ? String(cell.v) : "";
+      headers.forEach((h, i) => {
+        obj[h] = row[i] != null ? String(row[i]) : "";
       });
       return obj;
     });
-
-  return rows;
 }
