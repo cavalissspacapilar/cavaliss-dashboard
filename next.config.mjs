@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["googleapis"],
+  serverExternalPackages: ["googleapis", "google-auth-library"],
 };
 
 export default nextConfig;

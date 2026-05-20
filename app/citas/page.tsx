@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CalendarCheck, Clock, DollarSign, TrendingUp } from "lucide-react";
 import WeeklyCalendar from "@/components/citas/WeeklyCalendar";
 import HeatMap from "@/components/citas/HeatMap";
@@ -9,8 +9,6 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import type { AppointmentStatus, Appointment } from "@/lib/types";
 
-const TODAY = new Date().toISOString().split("T")[0];
-
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
   confirmada: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
   pendiente: "bg-amber-500/15 text-amber-400 border-amber-500/25",
@@ -18,10 +16,10 @@ const STATUS_STYLES: Record<AppointmentStatus, string> = {
   cancelada: "bg-red-500/15 text-red-400 border-red-500/25",
 };
 
-function ServiceStats() {
+function ServiceStats({ appointments }: { appointments: Appointment[] }) {
   const counts = SERVICES.map(s => ({
     name: s.name.split(" ").slice(0, 2).join(" "),
-    count: APPOINTMENTS.filter(a => a.service === s.name).length,
+    count: appointments.filter(a => a.service === s.name).length,
     color: s.colorHex,
   })).sort((a, b) => b.count - a.count).slice(0, 6);
 
@@ -52,7 +50,12 @@ export default function CitasPage() {
     fetchCitas().then(setAppointments).catch(() => {});
   }, []);
 
-  const todayAppts = appointments.filter(a => a.date === TODAY).sort((a, b) => a.time.localeCompare(b.time));
+  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const todayLabel = useMemo(() =>
+    new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "short" }),
+  []);
+
+  const todayAppts = appointments.filter(a => a.date === today).sort((a, b) => a.time.localeCompare(b.time));
   const totalToday = todayAppts.reduce((s, a) => s + a.price, 0);
   const confirmed = todayAppts.filter(a => a.status === "confirmada").length;
   const occupancy = Math.round((todayAppts.length / 10) * 100);
@@ -94,9 +97,13 @@ export default function CitasPage() {
 
       {/* Today's appointments */}
       <div className="glass-card border border-white/7 p-6">
-        <h3 className="text-zinc-100 font-semibold text-base mb-5">Citas de hoy — Lunes 19 May</h3>
+        <h3 className="text-zinc-100 font-semibold text-base mb-5 capitalize">
+          Citas de hoy — {todayLabel}
+        </h3>
         <div className="space-y-2.5">
-          {todayAppts.map(appt => (
+          {todayAppts.length === 0 ? (
+            <p className="text-zinc-600 text-sm text-center py-8">No hay citas para hoy</p>
+          ) : todayAppts.map(appt => (
             <div
               key={appt.id}
               className="flex items-center gap-4 p-3.5 rounded-xl border border-white/5 bg-white/2 hover:bg-white/4 hover:border-gold/15 transition-all duration-200 group"
@@ -126,11 +133,11 @@ export default function CitasPage() {
 
       {/* Charts bottom */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ServiceStats />
-        <HeatMap />
+        <ServiceStats appointments={appointments} />
+        <HeatMap appointments={appointments} />
       </div>
 
-      <WeeklyCalendar />
+      <WeeklyCalendar appointments={appointments} />
     </div>
   );
 }

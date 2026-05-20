@@ -8,9 +8,12 @@ function getAuth() {
 
   const key = JSON.parse(keyJson) as { client_email: string; private_key: string };
 
+  // Vercel sometimes stores JSON with double-escaped newlines in private_key
+  const privateKey = key.private_key.replace(/\\n/g, "\n");
+
   return new google.auth.JWT({
     email: key.client_email,
-    key: key.private_key,
+    key: privateKey,
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
 }

@@ -95,6 +95,25 @@ export function getStatusColor(status: string): string {
   return map[status] ?? "text-zinc-400 bg-zinc-400/10";
 }
 
+const DAY_NAMES_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+export function getWeekDates(): { label: string; date: string }[] {
+  const today = new Date();
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return {
+      label: `${DAY_NAMES_SHORT[d.getDay()]} ${d.getDate()}`,
+      date: d.toISOString().split("T")[0],
+    };
+  });
+}
+
 export function calcHealthScore(params: {
   occupancy: number;
   conversion: number;
