@@ -48,6 +48,7 @@ export interface Lead {
   id: number;
   name: string;
   phone: string;
+  email?: string;
   serviceInterest: ServiceName;
   source: LeadSource;
   status: LeadStatus;
@@ -56,6 +57,14 @@ export interface Lead {
   lastMessage: string;
   lastMessageTime: string;
   estimatedValue: number;
+  // Extended Sheets fields
+  leadId?: string;
+  entryDate?: string;
+  conversionDate?: string;
+  utmSource?: string;
+  campaign?: string;
+  adSet?: string;
+  ad?: string;
 }
 
 export interface RevenueDataPoint {
