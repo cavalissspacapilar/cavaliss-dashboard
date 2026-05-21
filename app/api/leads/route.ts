@@ -1,67 +1,68 @@
 import { NextResponse } from "next/server";
-import { LEADS } from "@/lib/data";
 import { fetchSheet } from "@/lib/sheets";
 import type { Lead, LeadStatus, LeadSource, LeadTemperature, ServiceName } from "@/lib/types";
 
-function pick(row: Record<string, string>, ...keys: string[]): string {
-  for (const k of keys) {
-    if (row[k]) return row[k];
-  }
-  return "";
-}
+// Exact columns: Nombre, telefono, Fuente, UTM, Fecha_Entrada, Estado,
+// Fecha_Conversion, Campana, Conjunto_Anuncios, Anuncio, Email, ID_Lead
 
 function normalizeStatus(s: string): LeadStatus {
-  const v = s.toLowerCase();
-  if (v.includes("nuevo") || v.includes("new")) return "Nuevo";
+  const v = s.toLowerCase().trim();
+  if (v.includes("nuevo") || v === "") return "Nuevo";
   if (v.includes("caliente") || v.includes("hot")) return "Lead caliente";
-  if (v.includes("reserva") || v.includes("ready")) return "Reserva lista";
+  if (v.includes("reserva") || v.includes("listo") || v.includes("lista")) return "Reserva lista";
   if (v.includes("convert")) return "Convertido";
-  if (v.includes("perdido") || v.includes("lost")) return "Perdido";
+  if (v.includes("perdido") || v.includes("lost") || v.includes("no")) return "Perdido";
   return "En conversación";
 }
 
 function normalizeSource(s: string): LeadSource {
-  const v = s.toLowerCase();
+  const v = s.toLowerCase().trim();
   if (v.includes("meta") || v.includes("facebook") || v.includes("fb")) return "Meta Ads";
-  if (v.includes("tiktok") || v.includes("tik tok")) return "TikTok";
+  if (v.includes("tiktok") || v.includes("tik")) return "TikTok";
   if (v.includes("instagram") || v.includes("ig")) return "Instagram";
   return "WhatsApp directo";
 }
 
-function normalizeTemp(s: string): LeadTemperature {
-  const v = s.toLowerCase();
-  if (v.includes("caliente") || v.includes("hot") || v === "🔥") return "caliente";
-  if (v.includes("frío") || v.includes("frio") || v.includes("cold") || v === "❄️") return "frío";
-  return "tibio";
+function daysFromDate(dateStr: string): number {
+  if (!dateStr) return 0;
+  try {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  } catch {
+    return 0;
+  }
 }
 
 export async function GET() {
   try {
     const rows = await fetchSheet("Leads");
 
-    const leads: Lead[] = rows.map((row, i) => {
-      const statusRaw = pick(row, "estado", "status", "etapa", "stage");
-      const sourceRaw = pick(row, "fuente", "source", "origen");
-      const tempRaw = pick(row, "temperatura", "temperature", "temp");
-      const value = Number(pick(row, "valor", "value", "precio estimado", "monto") || 0);
-      return {
-        id: i + 1,
-        name: pick(row, "nombre", "name", "lead") || `Lead ${i + 1}`,
-        phone: pick(row, "teléfono", "telefono", "phone", "tel"),
-        serviceInterest: (pick(row, "servicio", "service", "interés", "interes") || "Diagnóstico Capilar") as ServiceName,
-        source: normalizeSource(sourceRaw),
-        status: normalizeStatus(statusRaw),
-        temperature: normalizeTemp(tempRaw),
-        daysInPipeline: Number(pick(row, "días", "dias", "days") || 0),
-        lastMessage: pick(row, "último mensaje", "ultimo mensaje", "mensaje", "message") || "Sin mensajes",
-        lastMessageTime: pick(row, "fecha mensaje", "time", "fecha") || "reciente",
-        estimatedValue: value,
-      };
-    });
+    if (!rows.length) {
+      return NextResponse.json([], { headers: { "X-Data-Source": "sheets-empty" } });
+    }
 
-    return NextResponse.json(leads.length ? leads : LEADS);
+    const leads: Lead[] = rows
+      .filter(r => r.nombre)
+      .map((r, i) => ({
+        id: Number(r.id_lead ?? i + 1) || i + 1,
+        name: r.nombre ?? `Lead ${i + 1}`,
+        phone: r.telefono ?? "",
+        serviceInterest: "Diagnóstico Capilar" as ServiceName,
+        source: normalizeSource(r.fuente ?? ""),
+        status: normalizeStatus(r.estado ?? ""),
+        temperature: "tibio" as LeadTemperature,
+        daysInPipeline: daysFromDate(r.fecha_entrada),
+        lastMessage: r.utm ?? r.campana ?? "",
+        lastMessageTime: r.fecha_entrada ?? "",
+        estimatedValue: 0,
+      }));
+
+    return NextResponse.json(leads, { headers: { "X-Data-Source": "sheets" } });
   } catch (err) {
-    console.error("[/api/leads] fallback:", err);
-    return NextResponse.json(LEADS);
+    console.error("[/api/leads]", err);
+    return NextResponse.json([], {
+      status: 200,
+      headers: { "X-Data-Source": "error", "X-Error": String(err) },
+    });
   }
 }

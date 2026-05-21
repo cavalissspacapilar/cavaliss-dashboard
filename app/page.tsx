@@ -1,95 +1,101 @@
 "use client";
+import { useState, useEffect } from "react";
 import { CalendarCheck, DollarSign, Users, Percent } from "lucide-react";
 import KPICard from "@/components/inicio/KPICard";
 import RevenueChart from "@/components/inicio/RevenueChart";
 import ActivityFeed from "@/components/inicio/ActivityFeed";
 import AlertsPanel from "@/components/inicio/AlertsPanel";
 import HealthScore from "@/components/inicio/HealthScore";
-import { TODAY_KPIS } from "@/lib/data";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import type { KPIData } from "@/app/api/kpis/route";
+
+const EMPTY_KPIS: KPIData = {
+  citasHoy: 0,
+  ingresosDia: 0,
+  leadsActivos: 0,
+  totalLeads: 0,
+  convertidos: 0,
+  tasaConversion: 0,
+};
 
 export default function InicioPage() {
+  const [kpis, setKpis] = useState<KPIData>(EMPTY_KPIS);
+
+  useEffect(() => {
+    fetch("/api/kpis")
+      .then(r => r.ok ? r.json() as Promise<KPIData> : null)
+      .then(data => { if (data) setKpis(data); })
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="space-y-6 max-w-[1400px]">
-      {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">Vista General</h1>
         <p className="text-zinc-500 text-sm mt-0.5">Centro de control Cavaliss · Cancún, Q. Roo</p>
       </div>
 
-      {/* KPI Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KPICard
-          label="Citas confirmadas hoy"
-          value={TODAY_KPIS.citasConfirmadas}
-          trend={TODAY_KPIS.citasTrend}
-          trendLabel="+1 vs ayer"
-          icon={<CalendarCheck size={20} />}
-          color="gold"
-          detail={
-            <p className="text-zinc-400 text-sm">
-              9 citas en agenda — 7 confirmadas, 2 pendientes de anticipo. Ocupación del día: 85%.
-            </p>
-          }
-        />
-        <KPICard
-          label="Ingresos del día"
-          value={TODAY_KPIS.ingresosDia}
-          prefix="$"
-          trend={TODAY_KPIS.ingresosTrend}
-          trendLabel="+$2,050 vs ayer"
-          icon={<DollarSign size={20} />}
-          color="gold"
-          detail={
-            <p className="text-zinc-400 text-sm">
-              Meta del día: $15,000 MXN — vas en $13,500. Faltan 2 servicios por completar.
-            </p>
-          }
-        />
-        <KPICard
-          label="Leads activos"
-          value={TODAY_KPIS.leadsActivos}
-          trend={TODAY_KPIS.leadsTrend}
-          trendLabel="-1 vs ayer"
-          icon={<Users size={20} />}
-          color="pink"
-          detail={
-            <div className="text-zinc-400 text-sm space-y-1">
-              <p>🔥 Calientes: 7 · 🌡️ Tibios: 8 · ❄️ Fríos: 6</p>
-              <p>4 listos para cerrar esta semana.</p>
-            </div>
-          }
-        />
-        <KPICard
-          label="Tasa de conversión"
-          value={TODAY_KPIS.tasaConversion}
-          suffix="%"
-          trend={TODAY_KPIS.conversionTrend}
-          trendLabel="+1.7 pts vs semana pasada"
-          icon={<Percent size={20} />}
-          color="emerald"
-          detail={
-            <p className="text-zinc-400 text-sm">
-              34 de cada 100 leads se convierten en clientas. Promedio industria: 18%.
-            </p>
-          }
-        />
+        <ErrorBoundary label="Citas KPI">
+          <KPICard
+            label="Citas confirmadas hoy"
+            value={kpis.citasHoy}
+            trend={0}
+            icon={<CalendarCheck size={20} />}
+            color="gold"
+          />
+        </ErrorBoundary>
+        <ErrorBoundary label="Ingresos KPI">
+          <KPICard
+            label="Ingresos del día"
+            value={kpis.ingresosDia}
+            prefix="$"
+            trend={0}
+            icon={<DollarSign size={20} />}
+            color="gold"
+          />
+        </ErrorBoundary>
+        <ErrorBoundary label="Leads KPI">
+          <KPICard
+            label="Leads activos"
+            value={kpis.leadsActivos}
+            trend={0}
+            icon={<Users size={20} />}
+            color="pink"
+          />
+        </ErrorBoundary>
+        <ErrorBoundary label="Conversión KPI">
+          <KPICard
+            label="Tasa de conversión"
+            value={kpis.tasaConversion}
+            suffix="%"
+            trend={0}
+            icon={<Percent size={20} />}
+            color="emerald"
+          />
+        </ErrorBoundary>
       </div>
 
-      {/* Revenue Chart */}
-      <RevenueChart />
+      <ErrorBoundary label="Gráfica de ingresos">
+        <RevenueChart />
+      </ErrorBoundary>
 
-      {/* Bottom grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <ActivityFeed />
+          <ErrorBoundary label="Actividad">
+            <ActivityFeed />
+          </ErrorBoundary>
         </div>
         <div className="space-y-4">
-          <HealthScore />
+          <ErrorBoundary label="Health Score">
+            <HealthScore />
+          </ErrorBoundary>
         </div>
       </div>
 
-      {/* Alerts */}
-      <AlertsPanel />
+      <ErrorBoundary label="Alertas">
+        <AlertsPanel />
+      </ErrorBoundary>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import type { Appointment, Client, Lead, CavaConversation, RevenueDataPoint } from "./types";
 import type { MONTHLY_SUMMARY } from "./data";
+import type { KPIData } from "@/app/api/kpis/route";
 
 type MonthlySummary = typeof MONTHLY_SUMMARY;
 
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(path, { next: { revalidate: 60 } } as RequestInit);
+  const res = await fetch(path);
   if (!res.ok) throw new Error(`${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }
@@ -15,3 +16,4 @@ export const fetchLeads = () => apiFetch<Lead[]>("/api/leads");
 export const fetchConversaciones = () => apiFetch<CavaConversation[]>("/api/conversaciones");
 export const fetchIngresos = () =>
   apiFetch<{ revenueData: RevenueDataPoint[]; summary: MonthlySummary }>("/api/ingresos");
+export const fetchKPIs = () => apiFetch<KPIData>("/api/kpis");

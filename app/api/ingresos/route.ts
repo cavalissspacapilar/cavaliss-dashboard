@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { REVENUE_DATA, MONTHLY_SUMMARY } from "@/lib/data";
 import type { RevenueDataPoint } from "@/lib/types";
 
-interface StripeCharge {
+interface PaymentIntent {
   id: string;
   amount: number;
   currency: string;
@@ -13,7 +12,7 @@ interface StripeCharge {
 }
 
 interface StripeList {
-  data: StripeCharge[];
+  data: PaymentIntent[];
   has_more: boolean;
 }
 
@@ -21,74 +20,108 @@ function toDateStr(ts: number): string {
   return new Date(ts * 1000).toISOString().split("T")[0];
 }
 
-async function fetchAllCharges(): Promise<StripeCharge[]> {
-  const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
-  const url = `https://api.stripe.com/v1/charges?limit=100&created[gte]=${thirtyDaysAgo}`;
-
+async function fetchPaymentIntents(createdGte: number): Promise<PaymentIntent[]> {
+  const url = `https://api.stripe.com/v1/payment_intents?limit=100&created[gte]=${createdGte}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
     next: { revalidate: 300 },
   });
-
   if (!res.ok) throw new Error(`Stripe ${res.status}: ${await res.text()}`);
   const json: StripeList = await res.json();
-  return json.data.filter(c => c.status === "succeeded");
+  return json.data.filter(pi => pi.status === "succeeded");
 }
 
 export async function GET() {
-  try {
-    const charges = await fetchAllCharges();
+  const emptyResponse = {
+    revenueData: [] as RevenueDataPoint[],
+    summary: {
+      currentMonth: 0,
+      previousMonth: 0,
+      target: 0,
+      weeklyData: [] as { week: string; amount: number }[],
+      byService: [] as { name: string; amount: number; count: number }[],
+      pendingDeposits: [] as { client: string; service: string; amount: number; date: string }[],
+    },
+  };
 
-    // Group by date
+  try {
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+    const prevMonthStart = Math.floor(startOfPrevMonth.getTime() / 1000);
+    const currentMonthStart = Math.floor(startOfCurrentMonth.getTime() / 1000);
+
+    // Current month + 30-day window
+    const [currentPIs, prevPIs] = await Promise.all([
+      fetchPaymentIntents(Math.min(thirtyDaysAgo, currentMonthStart)),
+      fetchPaymentIntents(prevMonthStart).then(all =>
+        all.filter(pi => pi.created >= prevMonthStart && pi.created < currentMonthStart)
+      ),
+    ]);
+
+    // 30-day daily series
     const byDate: Record<string, number> = {};
-    charges.forEach(c => {
-      const d = toDateStr(c.created);
-      // Stripe amounts are in centavos for MXN → divide by 100
-      byDate[d] = (byDate[d] ?? 0) + c.amount / 100;
+    currentPIs.forEach(pi => {
+      const d = toDateStr(pi.created);
+      byDate[d] = (byDate[d] ?? 0) + pi.amount / 100;
     });
 
-    // Build 30-day series (fill missing days with 0)
-    const today = new Date();
     const points: RevenueDataPoint[] = Array.from({ length: 30 }, (_, i) => {
-      const d = new Date(today);
+      const d = new Date(now);
       d.setDate(d.getDate() - (29 - i));
       const dateStr = d.toISOString().split("T")[0];
       return { date: dateStr, amount: byDate[dateStr] ?? 0, appointments: 0 };
     });
 
     // Monthly totals
-    const currentMonth = points.reduce((s, p) => s + p.amount, 0);
-    const prevStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const prevEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    const currentMonth = currentPIs
+      .filter(pi => pi.created >= currentMonthStart)
+      .reduce((s, pi) => s + pi.amount / 100, 0);
 
-    // Build service breakdown from charge descriptions / metadata
-    const byService: Record<string, number> = {};
-    charges.forEach(c => {
-      const svc = c.metadata?.service ?? c.description ?? "Servicio";
-      byService[svc] = (byService[svc] ?? 0) + c.amount / 100;
+    const previousMonth = prevPIs.reduce((s, pi) => s + pi.amount / 100, 0);
+
+    // Weekly breakdown for current month
+    const weeks = ["Sem 1", "Sem 2", "Sem 3", "Sem 4"];
+    const weeklyData = weeks.map((week, wi) => {
+      const wStart = new Date(startOfCurrentMonth);
+      wStart.setDate(1 + wi * 7);
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wStart.getDate() + 7);
+      const amount = currentPIs
+        .filter(pi => {
+          const d = new Date(pi.created * 1000);
+          return d >= wStart && d < wEnd && pi.created >= currentMonthStart;
+        })
+        .reduce((s, pi) => s + pi.amount / 100, 0);
+      return { week, amount };
     });
 
-    const serviceBreakdown = Object.entries(byService)
-      .map(([name, amount]) => ({ name, amount, count: 1 }))
+    // Service breakdown from metadata/description
+    const byServiceMap: Record<string, { amount: number; count: number }> = {};
+    currentPIs
+      .filter(pi => pi.created >= currentMonthStart)
+      .forEach(pi => {
+        const svc = pi.metadata?.service ?? pi.description ?? "Sin categoría";
+        const existing = byServiceMap[svc] ?? { amount: 0, count: 0 };
+        byServiceMap[svc] = { amount: existing.amount + pi.amount / 100, count: existing.count + 1 };
+      });
+
+    const byService = Object.entries(byServiceMap)
+      .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 9);
 
     return NextResponse.json({
       revenueData: points,
-      summary: {
-        currentMonth,
-        previousMonth: MONTHLY_SUMMARY.previousMonth,
-        target: MONTHLY_SUMMARY.target,
-        weeklyData: MONTHLY_SUMMARY.weeklyData,
-        byService: serviceBreakdown.length ? serviceBreakdown : MONTHLY_SUMMARY.byService,
-        pendingDeposits: MONTHLY_SUMMARY.pendingDeposits,
-      },
-    });
+      summary: { currentMonth, previousMonth, target: 0, weeklyData, byService, pendingDeposits: [] },
+    }, { headers: { "X-Data-Source": "stripe" } });
   } catch (err) {
-    console.error("[/api/ingresos] fallback:", err);
-    return NextResponse.json({
-      revenueData: REVENUE_DATA,
-      summary: MONTHLY_SUMMARY,
+    console.error("[/api/ingresos]", err);
+    return NextResponse.json(emptyResponse, {
+      status: 200,
+      headers: { "X-Data-Source": "error", "X-Error": String(err) },
     });
   }
 }

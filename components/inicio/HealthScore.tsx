@@ -1,12 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
-import { TODAY_KPIS } from "@/lib/data";
+import { calcHealthScore } from "@/lib/utils";
 
-const METRICS = [
-  { label: "Ocupación", value: 85, color: "#D4A017" },
-  { label: "Conversión", value: 34, color: "#C2185B" },
-  { label: "Retención", value: 78, color: "#10B981" },
-  { label: "Ingresos vs meta", value: 67, color: "#3B82F6" },
+interface Metric {
+  label: string;
+  value: number;
+  color: string;
+}
+
+interface Props {
+  occupancy?: number;
+  conversion?: number;
+  retention?: number;
+  revenueVsTarget?: number;
+}
+
+const DEFAULT_METRICS: Metric[] = [
+  { label: "Ocupación", value: 0, color: "#D4A017" },
+  { label: "Conversión", value: 0, color: "#C2185B" },
+  { label: "Retención", value: 0, color: "#10B981" },
+  { label: "Ingresos vs meta", value: 0, color: "#3B82F6" },
 ];
 
 function GaugeArc({ score, size = 160 }: { score: number; size?: number }) {
@@ -15,14 +28,12 @@ function GaugeArc({ score, size = 160 }: { score: number; size?: number }) {
   const cx = size / 2;
   const cy = size / 2 + 10;
   const circumference = Math.PI * radius;
-  const dashArray = circumference;
   const dashOffset = circumference * (1 - animated / 100);
-
-  const color = score >= 75 ? "#10B981" : score >= 50 ? "#D4A017" : "#EF4444";
+  const color = score >= 75 ? "#10B981" : score >= 50 ? "#D4A017" : score > 0 ? "#EF4444" : "#3f3f46";
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimated(score), 200);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setAnimated(score), 200);
+    return () => clearTimeout(t);
   }, [score]);
 
   return (
@@ -39,7 +50,7 @@ function GaugeArc({ score, size = 160 }: { score: number; size?: number }) {
         strokeWidth="12"
         strokeLinecap="round"
         stroke={color}
-        strokeDasharray={`${dashArray}`}
+        strokeDasharray={`${circumference}`}
         strokeDashoffset={`${dashOffset}`}
         style={{ transition: "stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)", filter: `drop-shadow(0 0 8px ${color}66)` }}
       />
@@ -55,21 +66,29 @@ function GaugeArc({ score, size = 160 }: { score: number; size?: number }) {
 
 function MiniBar({ value, color }: { value: number; color: string }) {
   const [w, setW] = useState(0);
-  useEffect(() => { setTimeout(() => setW(value), 300); }, [value]);
+  useEffect(() => { const t = setTimeout(() => setW(value), 300); return () => clearTimeout(t); }, [value]);
   return (
     <div className="h-1.5 rounded-full bg-white/6 overflow-hidden">
-      <div
-        className="h-full rounded-full transition-all duration-1000 ease-out"
-        style={{ width: `${w}%`, backgroundColor: color }}
-      />
+      <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${w}%`, backgroundColor: color }} />
     </div>
   );
 }
 
-export default function HealthScore() {
-  const score = TODAY_KPIS.healthScore;
-  const label = score >= 80 ? "Excelente" : score >= 65 ? "Bueno" : score >= 50 ? "Regular" : "Crítico";
-  const labelColor = score >= 80 ? "text-emerald-400" : score >= 65 ? "text-gold" : score >= 50 ? "text-amber-400" : "text-red-400";
+export default function HealthScore({ occupancy = 0, conversion = 0, retention = 0, revenueVsTarget = 0 }: Props) {
+  const metrics: Metric[] = [
+    { label: "Ocupación", value: occupancy, color: "#D4A017" },
+    { label: "Conversión", value: conversion, color: "#C2185B" },
+    { label: "Retención", value: retention, color: "#10B981" },
+    { label: "Ingresos vs meta", value: revenueVsTarget, color: "#3B82F6" },
+  ];
+
+  const allZero = metrics.every(m => m.value === 0);
+  const score = allZero ? 0 : calcHealthScore({ occupancy, conversion, retention, revenueVsTarget });
+  const label = score >= 80 ? "Excelente" : score >= 65 ? "Bueno" : score >= 50 ? "Regular" : score > 0 ? "Crítico" : "Sin datos";
+  const labelColor = score >= 80 ? "text-emerald-400" : score >= 65 ? "text-gold" : score >= 50 ? "text-amber-400" : score > 0 ? "text-red-400" : "text-zinc-600";
+
+  // Use defaults when no real data yet
+  const displayMetrics = allZero ? DEFAULT_METRICS : metrics;
 
   return (
     <div className="glass-card border border-white/7 p-6">
@@ -79,11 +98,11 @@ export default function HealthScore() {
       <div className="flex flex-col items-center">
         <GaugeArc score={score} />
         <p className={`text-sm font-bold -mt-1 ${labelColor}`}>{label}</p>
-        <p className="text-zinc-600 text-xs mt-1">vs 68 ayer (+4 pts)</p>
+        {allZero && <p className="text-zinc-600 text-xs mt-1">Conecta las APIs para ver tu score</p>}
       </div>
 
       <div className="mt-5 space-y-3">
-        {METRICS.map((m) => (
+        {displayMetrics.map((m) => (
           <div key={m.label}>
             <div className="flex justify-between items-center mb-1">
               <span className="text-zinc-400 text-xs">{m.label}</span>

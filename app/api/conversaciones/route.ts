@@ -1,43 +1,53 @@
 import { NextResponse } from "next/server";
-import { CAVA_CONVERSATIONS } from "@/lib/data";
 import { fetchSheet } from "@/lib/sheets";
 import type { CavaConversation, ServiceName } from "@/lib/types";
 
-function pick(row: Record<string, string>, ...keys: string[]): string {
-  for (const k of keys) {
-    if (row[k]) return row[k];
-  }
-  return "";
-}
+// Exact columns: Fecha, Hora, Telefono, Nombre, Mensaje_Cliente,
+// Respuesta_Cava, Servicio_Interes, Lead_Caliente, Seguimiento, operador_activo
 
 export async function GET() {
   try {
     const rows = await fetchSheet("Conversaciones");
 
-    const convs: CavaConversation[] = rows.map((row, i) => {
-      const statusRaw = pick(row, "estado", "status").toLowerCase();
-      const status: CavaConversation["status"] =
-        statusRaw.includes("resuelta") || statusRaw.includes("resolved") ? "resuelta"
-        : statusRaw.includes("esper") || statusRaw.includes("wait") ? "esperando"
-        : "activa";
+    if (!rows.length) {
+      return NextResponse.json([], { headers: { "X-Data-Source": "sheets-empty" } });
+    }
 
-      return {
-        id: i + 1,
-        name: pick(row, "nombre", "name", "lead") || `Lead ${i + 1}`,
-        phone: pick(row, "teléfono", "telefono", "phone"),
-        lastMessage: pick(row, "último mensaje", "mensaje", "message") || "...",
-        lastMessageTime: pick(row, "tiempo", "time", "fecha") || "reciente",
-        serviceInterest: (pick(row, "servicio", "service") || "Diagnóstico Capilar") as ServiceName,
-        status,
-        isTyping: false,
-        messagesCount: Number(pick(row, "mensajes", "messages", "total mensajes") || 0),
-        responseTime: Number(pick(row, "tiempo respuesta", "response time") || 45),
-      };
-    });
+    const convs: CavaConversation[] = rows
+      .filter(r => r.nombre || r.telefono)
+      .map((r, i) => {
+        const operadorActivo = (r.operador_activo ?? "").toLowerCase();
+        const isAgentActive = operadorActivo === "true" || operadorActivo === "1" || operadorActivo === "sí" || operadorActivo === "si";
 
-    return NextResponse.json(convs.length ? convs : CAVA_CONVERSATIONS);
+        const status: CavaConversation["status"] =
+          isAgentActive ? "activa"
+          : (r.seguimiento ?? "").toLowerCase().includes("resuel") ? "resuelta"
+          : "esperando";
+
+        const timeLabel = r.hora
+          ? `${r.fecha ?? ""} ${r.hora}`.trim()
+          : r.fecha ?? "reciente";
+
+        return {
+          id: i + 1,
+          name: r.nombre ?? `Lead ${i + 1}`,
+          phone: r.telefono ?? "",
+          lastMessage: r.mensaje_cliente ?? "",
+          lastMessageTime: timeLabel,
+          serviceInterest: (r.servicio_interes as ServiceName) ?? "Diagnóstico Capilar",
+          status,
+          isTyping: false,
+          messagesCount: 0,
+          responseTime: 0,
+        };
+      });
+
+    return NextResponse.json(convs, { headers: { "X-Data-Source": "sheets" } });
   } catch (err) {
-    console.error("[/api/conversaciones] fallback:", err);
-    return NextResponse.json(CAVA_CONVERSATIONS);
+    console.error("[/api/conversaciones]", err);
+    return NextResponse.json([], {
+      status: 200,
+      headers: { "X-Data-Source": "error", "X-Error": String(err) },
+    });
   }
 }
