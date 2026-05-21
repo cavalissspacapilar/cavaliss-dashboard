@@ -39,6 +39,11 @@ function daysFromDate(dateStr: string): number {
   }
 }
 
+function looksLikePhone(s: string): boolean {
+  const digits = s.replace(/[\s+\-()]/g, "");
+  return digits.length > 8 && /^\d+$/.test(digits);
+}
+
 export async function GET() {
   try {
     const rows = await fetchSheet("Leads");
@@ -50,6 +55,13 @@ export async function GET() {
     const leads: Lead[] = rows
       .filter(r => r.nombre || r.telefono)
       .map((r, i) => {
+        // Swap if Sheets columns are inverted (nombre contains the phone number)
+        let nombre   = r.nombre   ?? "";
+        let telefono = r.telefono ?? "";
+        if (looksLikePhone(nombre)) {
+          [nombre, telefono] = [telefono, nombre];
+        }
+
         const status = normalizeStatus(r.estado ?? "");
         const source = normalizeSource(r.fuente ?? "");
         const temperature = deriveTemperature(status);
@@ -57,8 +69,8 @@ export async function GET() {
 
         return {
           id: parseInt(r.id_lead ?? String(i + 1), 10) || i + 1,
-          name: r.nombre ?? "",
-          phone: r.telefono ?? "",
+          name: nombre,
+          phone: telefono,
           email: r.email || undefined,
           serviceInterest: "Diagnóstico Capilar" as ServiceName,
           source,

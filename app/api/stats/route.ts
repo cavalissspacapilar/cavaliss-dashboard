@@ -31,10 +31,11 @@ export async function GET() {
     }
   } catch {}
 
-  // Badge 2: Leads with Estado="Nuevo" from Sheets
+  // Badge 2: Leads with Estado="Nuevo" from Sheets (skip empty rows)
   try {
     const rows = await fetchSheet("Leads");
     result.leadsBadge = rows.filter(r =>
+      (r.telefono || r.nombre || "").trim().length > 0 &&
       (r.estado ?? "").toLowerCase() === "nuevo"
     ).length;
   } catch {}

@@ -77,23 +77,29 @@ const CARD_CSS = `
 // HELPERS
 // ─────────────────────────────────────────────────────────────
 
+function parseDate(str?: string): Date | null {
+  if (!str || str.trim() === "") return null;
+  const d = new Date(str.trim());
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function relTime(d?: string): string {
-  if (!d) return "—";
-  try {
-    const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-    if (days <  0) return "reciente";
-    if (days === 0) return "hoy";
-    if (days === 1) return "hace 1 día";
-    if (days <  7) return `hace ${days} días`;
-    if (days < 14) return "hace 1 sem.";
-    if (days < 30) return `hace ${Math.floor(days / 7)} sem.`;
-    return `hace ${Math.floor(days / 30)} mes`;
-  } catch { return "—"; }
+  const date = parseDate(d);
+  if (!date) return "—";
+  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+  if (days <  0) return "reciente";
+  if (days === 0) return "hoy";
+  if (days === 1) return "hace 1 día";
+  if (days <  7) return `hace ${days} días`;
+  if (days < 14) return "hace 1 sem.";
+  if (days < 30) return `hace ${Math.floor(days / 7)} sem.`;
+  return `hace ${Math.floor(days / 30)} mes`;
 }
 
 function fmtDate(d?: string): string {
-  if (!d) return "—";
-  try { return new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }); }
+  const date = parseDate(d);
+  if (!date) return "—";
+  try { return date.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }); }
   catch { return "—"; }
 }
 
