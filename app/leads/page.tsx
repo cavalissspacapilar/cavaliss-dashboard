@@ -79,8 +79,13 @@ const CARD_CSS = `
 
 function parseDate(str?: string): Date | null {
   if (!str || str.trim() === "") return null;
-  const d = new Date(str.trim());
-  return isNaN(d.getTime()) ? null : d;
+  let s = str.trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [d, m, y] = s.split("/");
+    s = `${y}-${m}-${d}`;
+  }
+  const date = new Date(s);
+  return isNaN(date.getTime()) ? null : date;
 }
 
 function relTime(d?: string): string {

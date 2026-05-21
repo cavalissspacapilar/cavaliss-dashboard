@@ -29,14 +29,21 @@ function deriveTemperature(status: LeadStatus): LeadTemperature {
   return "tibio";
 }
 
-function daysFromDate(dateStr: string): number {
-  if (!dateStr) return 0;
-  try {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  } catch {
-    return 0;
+function parseDate(str: string): Date | null {
+  if (!str || str.trim() === "") return null;
+  let s = str.trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [d, m, y] = s.split("/");
+    s = `${y}-${m}-${d}`;
   }
+  const date = new Date(s);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function daysFromDate(dateStr: string): number {
+  const date = parseDate(dateStr);
+  if (!date) return 0;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
 function looksLikePhone(s: string): boolean {
