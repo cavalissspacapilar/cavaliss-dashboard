@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { MessageSquare, Send, Zap, Users, CheckCircle, Clock } from "lucide-react";
+import { MessageSquare, Send, Zap, CheckCircle, Clock, Users } from "lucide-react";
 import { fetchConversaciones } from "@/lib/api-client";
 import { cn, getInitials, getAvatarColor } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -43,7 +43,10 @@ function ConversationCard({ conv, selected, onClick }: { conv: CavaConversation;
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-zinc-200 text-sm font-semibold truncate">{conv.name}</p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="text-zinc-200 text-sm font-semibold truncate">{conv.name}</p>
+              {conv.isHot && <span className="text-sm shrink-0">🔥</span>}
+            </div>
             <p className="text-zinc-600 text-xs shrink-0">{conv.lastMessageTime}</p>
           </div>
           {conv.isTyping ? <TypingIndicator /> : (
@@ -55,6 +58,9 @@ function ConversationCard({ conv, selected, onClick }: { conv: CavaConversation;
             </span>
             {conv.serviceInterest && (
               <span className="text-[10px] text-zinc-600 truncate max-w-[100px]">{conv.serviceInterest.split(" ")[0]}</span>
+            )}
+            {conv.messagesCount > 1 && (
+              <span className="text-[10px] text-zinc-600">{conv.messagesCount} msgs</span>
             )}
           </div>
         </div>
@@ -79,6 +85,21 @@ function ConversationDetail({ conv }: { conv: CavaConversation | null }) {
 
   const avatarColor = getAvatarColor(conv.name);
 
+  async function handleTakeover() {
+    const next = !takenOver;
+    setTakenOver(next);
+    const phone = conv?.phone;
+    if (next && phone) {
+      try {
+        await fetch("/api/conversaciones/takeover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone }),
+        });
+      } catch {}
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col border border-white/7 rounded-xl overflow-hidden bg-[rgba(255,255,255,0.02)]">
       <div className="flex items-center justify-between p-4 border-b border-white/5">
@@ -87,12 +108,15 @@ function ConversationDetail({ conv }: { conv: CavaConversation | null }) {
             {getInitials(conv.name)}
           </div>
           <div>
-            <p className="text-zinc-200 font-semibold text-sm">{conv.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-zinc-200 font-semibold text-sm">{conv.name}</p>
+              {conv.isHot && <span className="text-sm">🔥</span>}
+            </div>
             <p className="text-zinc-500 text-xs">{conv.phone || conv.serviceInterest}</p>
           </div>
         </div>
         <button
-          onClick={() => setTakenOver(!takenOver)}
+          onClick={handleTakeover}
           className={cn(
             "text-xs px-4 py-2 rounded-xl border font-semibold transition-all duration-200",
             takenOver ? "bg-cavaliss-pink/15 text-cavaliss-pink border-cavaliss-pink/30" : "text-gold border-gold/25 hover:bg-gold/10"
@@ -103,6 +127,7 @@ function ConversationDetail({ conv }: { conv: CavaConversation | null }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Client's last message */}
         {conv.lastMessage && (
           <div className="flex justify-start">
             <div className="client-avatar w-7 h-7 text-xs font-bold mr-2 shrink-0 mt-auto" style={{ background: avatarColor }}>
@@ -114,6 +139,20 @@ function ConversationDetail({ conv }: { conv: CavaConversation | null }) {
             </div>
           </div>
         )}
+
+        {/* Cava's last response */}
+        {conv.lastResponseCava && (
+          <div className="flex justify-end">
+            <div className="max-w-[75%] rounded-2xl px-4 py-2.5 bg-gold/15 border border-gold/20 text-zinc-200 text-sm rounded-tr-sm">
+              <p className="leading-relaxed">{conv.lastResponseCava}</p>
+              <p className="text-xs opacity-40 mt-1 text-right">Cava IA</p>
+            </div>
+            <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center ml-2 shrink-0 mt-auto">
+              <span className="text-gold text-xs font-bold">C</span>
+            </div>
+          </div>
+        )}
+
         {conv.isTyping && (
           <div className="flex justify-end">
             <div className="max-w-[75%] rounded-2xl px-4 py-2.5 bg-gold/15 border border-gold/20 rounded-tr-sm">
@@ -122,6 +161,12 @@ function ConversationDetail({ conv }: { conv: CavaConversation | null }) {
             <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center ml-2 shrink-0 mt-auto">
               <span className="text-gold text-xs font-bold">C</span>
             </div>
+          </div>
+        )}
+
+        {!conv.lastMessage && !conv.lastResponseCava && (
+          <div className="flex items-center justify-center h-full py-8">
+            <p className="text-zinc-600 text-sm">Sin mensajes disponibles</p>
           </div>
         )}
       </div>
@@ -161,9 +206,8 @@ export default function CavaPage() {
   }, []);
 
   const activas = conversations.filter(c => c.status === "activa").length;
-  const typing = conversations.filter(c => c.isTyping).length;
-  const leadsHoy = conversations.filter(c => c.status !== "resuelta").length;
-  const reservasCerradas = conversations.filter(c => c.status === "resuelta").length;
+  const hotLeads = conversations.filter(c => c.isHot).length;
+  const resueltas = conversations.filter(c => c.status === "resuelta").length;
 
   const filtered = conversations.filter(c => statusFilter === "todas" || c.status === statusFilter);
 
@@ -180,31 +224,31 @@ export default function CavaPage() {
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {[
             { label: "Conversaciones activas", value: activas, icon: MessageSquare, color: "text-gold" },
-            { label: "Leads en gestión", value: leadsHoy, icon: Users, color: "text-emerald-400" },
-            { label: "Conversaciones resueltas", value: reservasCerradas, icon: CheckCircle, color: "text-cavaliss-pink" },
-            { label: "Tiempo prom. respuesta", value: conversations.length > 0 ? Math.round(conversations.reduce((s, c) => s + c.responseTime, 0) / conversations.length) : 0, suffix: "s", icon: Zap, color: "text-blue-400" },
+            { label: "Leads calientes", value: hotLeads, icon: Zap, color: "text-orange-400" },
+            { label: "Conversaciones resueltas", value: resueltas, icon: CheckCircle, color: "text-cavaliss-pink" },
+            { label: "Tiempo de respuesta", value: "Tiempo real", icon: Clock, color: "text-blue-400" },
           ].map(k => (
             <div key={k.label} className="glass-card border border-white/7 p-5 glass-card-hover">
               <k.icon size={18} className={`${k.color} mb-3`} />
-              <p className={`text-2xl font-bold ${k.color}`}>
-                {k.value}{("suffix" in k) ? k.suffix : ""}
-              </p>
+              <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
               <p className="text-zinc-500 text-sm mt-1">{k.label}</p>
             </div>
           ))}
         </div>
       </ErrorBoundary>
 
-      {typing > 0 && (
-        <div className="glass-card-gold border border-gold/20 p-4 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center">
-            <span className="text-gold font-bold text-sm">C</span>
-          </div>
+      {hotLeads > 0 && (
+        <div className="glass-card border border-orange-500/25 bg-orange-500/5 p-4 flex items-center gap-3">
+          <span className="text-2xl">🔥</span>
           <div>
-            <p className="text-gold font-semibold text-sm">Cava está escribiendo...</p>
-            <p className="text-zinc-500 text-xs">Respondiendo a {typing} conversación{typing > 1 ? "es" : ""}</p>
+            <p className="text-orange-300 font-semibold text-sm">
+              {hotLeads} lead{hotLeads > 1 ? "s calientes" : " caliente"} en conversación
+            </p>
+            <p className="text-zinc-500 text-xs mt-0.5">
+              {conversations.filter(c => c.isHot).slice(0, 3).map(c => c.name.split(" ")[0]).join(", ")} — prioridad alta
+            </p>
           </div>
-          <TypingIndicator />
+          <Users size={18} className="text-orange-400 ml-auto shrink-0" />
         </div>
       )}
 

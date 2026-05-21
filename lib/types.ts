@@ -70,10 +70,12 @@ export interface CavaConversation {
   name: string;
   phone: string;
   lastMessage: string;
+  lastResponseCava?: string;
   lastMessageTime: string;
   serviceInterest: ServiceName;
   status: "activa" | "esperando" | "resuelta";
   isTyping?: boolean;
+  isHot?: boolean;
   messagesCount: number;
   responseTime: number;
 }

@@ -5,12 +5,29 @@ import type { Client, ClientSegment, ServiceName } from "@/lib/types";
 // Exact columns: ID_Cliente, Nombre, Telefono, Email, Primera_Visita,
 // Ultima_Visita, Total_Visitas, Servicio_Favorito, Gasto_Total,
 // Segmento, Canal_Origen, Etiqueta_WATI
-// fetchSheet returns keys in lowercase with underscores preserved.
 
-function deriveSegment(gasto: number, visitas: number): ClientSegment {
+const VALID_SERVICES: ServiceName[] = [
+  "Diagnóstico Capilar", "Exfoliación Capilar", "Nutrición Capilar",
+  "Ritual Detox", "Reconstrucción Molecular", "Luminoplastia",
+  "VIP Curly Experience", "Electroestimulación", "Mesoterapia con Exosomas",
+];
+
+function normalizeSegment(raw: string, gasto: number, visitas: number): ClientSegment {
+  const lower = raw.trim().toLowerCase();
+  if (lower === "vip") return "VIP";
+  if (lower === "regular") return "Regular";
+  if (lower === "nueva" || lower === "nuevo") return "Nueva";
+  // Derive from spend/visits if not explicitly set
   if (gasto >= 5000) return "VIP";
   if (visitas >= 2) return "Regular";
   return "Nueva";
+}
+
+function normalizeService(raw: string): ServiceName {
+  const match = VALID_SERVICES.find(s =>
+    s.toLowerCase() === raw.trim().toLowerCase()
+  );
+  return match ?? "Diagnóstico Capilar";
 }
 
 export async function GET() {
@@ -24,20 +41,21 @@ export async function GET() {
     const clients: Client[] = rows
       .filter(r => r.nombre)
       .map((r, i) => {
-        const gasto = Number(r.gasto_total ?? 0) || 0;
-        const visitas = Number(r.total_visitas ?? 0) || 0;
-        const segmento = (r.segmento as ClientSegment) || deriveSegment(gasto, visitas);
+        const gasto = parseFloat(r.gasto_total ?? "0") || 0;
+        const visitas = parseInt(r.total_visitas ?? "0", 10) || 0;
+        const segment = normalizeSegment(r.segmento ?? "", gasto, visitas);
+        const lastVisit = r.ultima_visita || r.primera_visita || "2020-01-01";
 
         return {
-          id: Number(r.id_cliente ?? i + 1) || i + 1,
-          name: r.nombre ?? `Clienta ${i + 1}`,
+          id: parseInt(r.id_cliente ?? String(i + 1), 10) || i + 1,
+          name: r.nombre,
           phone: r.telefono ?? "",
           email: r.email ?? "",
-          lastService: (r.servicio_favorito as ServiceName) ?? "Diagnóstico Capilar",
-          lastVisit: r.ultima_visita ?? r.primera_visita ?? "",
+          lastService: normalizeService(r.servicio_favorito ?? ""),
+          lastVisit,
           nextAppointment: undefined,
           totalValue: gasto,
-          segment: segmento,
+          segment,
           visits: visitas,
         };
       });

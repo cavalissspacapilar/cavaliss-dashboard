@@ -15,16 +15,20 @@ export const SERVICES: ServiceData[] = [
   { name: "Mesoterapia con Exosomas", price: 2800, duration: 90, color: "bg-rose-500", colorHex: "#F43F5E" },
 ];
 
-// n8n workflow definitions — static is acceptable per spec (Sistema page).
+// n8n workflow definitions — static reference data for /sistema page.
 export const WORKFLOWS: Workflow[] = [
-  { id: 1, name: "Confirmación de Citas", description: "Envía WhatsApp de confirmación 24h antes de la cita", status: "activo", lastRun: "hace 2 min", nextRun: "en 58 min", executionsToday: 9, successRate: 100, monthlyCost: 120 },
-  { id: 2, name: "Seguimiento de Leads", description: "Cava IA responde y nutre leads de Meta Ads", status: "activo", lastRun: "hace 30 seg", nextRun: "continuo", executionsToday: 47, successRate: 98, monthlyCost: 380 },
-  { id: 3, name: "Recordatorio de Anticipo", description: "Alerta a clientes con reserva sin pago de anticipo", status: "activo", lastRun: "hace 15 min", nextRun: "en 45 min", executionsToday: 5, successRate: 100, monthlyCost: 60 },
-  { id: 4, name: "Sincronización Base44→Sheets", description: "Exporta citas confirmadas a Google Sheets CRM", status: "advertencia", lastRun: "hace 1h 20min", nextRun: "en 10 min", executionsToday: 3, successRate: 75, monthlyCost: 90, lastError: "Timeout al escribir en Sheets. Reintentando..." },
-  { id: 5, name: "Reactivación de Clientas", description: "Contacta clientas inactivas más de 45 días", status: "activo", lastRun: "hace 6h", nextRun: "mañana 9am", executionsToday: 1, successRate: 100, monthlyCost: 45 },
-  { id: 6, name: "Reporte Diario de Ingresos", description: "Genera resumen de ingresos y lo envía por WhatsApp a Angee", status: "activo", lastRun: "hoy 8:00am", nextRun: "mañana 8am", executionsToday: 1, successRate: 100, monthlyCost: 30 },
-  { id: 7, name: "Post-Servicio Review", description: "Solicita reseña de Google a clientas 2h después del servicio", status: "activo", lastRun: "hace 45 min", nextRun: "en 1h 15min", executionsToday: 4, successRate: 100, monthlyCost: 55 },
-  { id: 8, name: "Integración Stripe→CRM", description: "Registra pagos de Stripe en Google Sheets automáticamente", status: "error", lastRun: "hace 3h 10min", nextRun: "—", executionsToday: 0, successRate: 0, monthlyCost: 70, lastError: "API Stripe webhook 401 Unauthorized. Revisar clave secreta." },
+  { id: 1, name: "IA Cavaliss Vendedora", description: "Agente de IA que responde leads y agenda citas automáticamente", status: "activo", lastRun: "hace 12 seg", nextRun: "continuo", executionsToday: 83, successRate: 100, monthlyCost: 0 },
+  { id: 2, name: "M1.1 Nueva Reserva", description: "Confirmación automática de cita al momento de agendar", status: "activo", lastRun: "hace 4 min", nextRun: "en espera", executionsToday: 9, successRate: 100, monthlyCost: 0 },
+  { id: 3, name: "M1.2 Recordatorio 24h", description: "WhatsApp de recordatorio 24 horas antes de la cita", status: "activo", lastRun: "hoy 9:00am", nextRun: "mañana 9am", executionsToday: 6, successRate: 100, monthlyCost: 0 },
+  { id: 4, name: "M1.3 Recordatorio 2h", description: "WhatsApp de recordatorio 2 horas antes de la cita", status: "activo", lastRun: "hace 1h 48min", nextRun: "en 12 min", executionsToday: 4, successRate: 100, monthlyCost: 0 },
+  { id: 5, name: "M2.1 CRM Clasificación", description: "Clasifica y etiqueta leads automáticamente en el CRM", status: "activo", lastRun: "hace 23 min", nextRun: "en espera", executionsToday: 14, successRate: 100, monthlyCost: 0 },
+  { id: 6, name: "M2.2 Reporte Diario", description: "Envía resumen diario de citas e ingresos a Angee vía WhatsApp", status: "activo", lastRun: "hoy 8:00am", nextRun: "mañana 8am", executionsToday: 1, successRate: 100, monthlyCost: 0 },
+  { id: 7, name: "M3.1 Retención Día 3", description: "Mensaje de seguimiento 3 días después del servicio", status: "activo", lastRun: "hoy 10:00am", nextRun: "mañana 10am", executionsToday: 2, successRate: 100, monthlyCost: 0 },
+  { id: 8, name: "M3.2 Retención Día 7", description: "Mensaje de reactivación 7 días post-servicio", status: "activo", lastRun: "hoy 10:05am", nextRun: "mañana 10am", executionsToday: 3, successRate: 100, monthlyCost: 0 },
+  { id: 9, name: "M3.3 Retención Día 15", description: "Oferta especial para clientas sin visita en 15 días", status: "activo", lastRun: "hoy 10:10am", nextRun: "mañana 10am", executionsToday: 1, successRate: 100, monthlyCost: 0 },
+  { id: 10, name: "Reserva Automática", description: "Crea reserva en Base44 cuando lead confirma interés", status: "activo", lastRun: "hace 33 min", nextRun: "en espera", executionsToday: 2, successRate: 100, monthlyCost: 0 },
+  { id: 11, name: "Stripe Pago Confirmado", description: "Registra pagos confirmados en Google Sheets CRM", status: "activo", lastRun: "hace 18 min", nextRun: "en espera", executionsToday: 5, successRate: 100, monthlyCost: 0 },
+  { id: 12, name: "Secuencia Cierre Leads", description: "Secuencia de mensajes para convertir leads calientes en reservas", status: "activo", lastRun: "hace 8 min", nextRun: "en espera", executionsToday: 7, successRate: 100, monthlyCost: 0 },
 ];
 
 // Empty fallback values — used as React initial state only.

@@ -7,15 +7,18 @@ import {
   TrendingUp, Bot, Settings2, ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDashboardStats } from "@/lib/context/DashboardStatsContext";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Inicio", icon: LayoutDashboard, badge: null },
-  { href: "/citas", label: "Citas", icon: CalendarDays, badge: "9" },
-  { href: "/clientes", label: "Clientes", icon: Users, badge: null },
-  { href: "/leads", label: "Leads", icon: Target, badge: "21" },
-  { href: "/ingresos", label: "Ingresos", icon: TrendingUp, badge: null },
-  { href: "/cava", label: "Cava IA", icon: Bot, badge: "14" },
-  { href: "/sistema", label: "Sistema", icon: Settings2, badge: "!" },
+type BadgeKey = "citasBadge" | "leadsBadge" | "cavaBadge";
+
+const BASE_NAV: { href: string; label: string; icon: React.ElementType; badgeKey: BadgeKey | null }[] = [
+  { href: "/", label: "Inicio", icon: LayoutDashboard, badgeKey: null },
+  { href: "/citas", label: "Citas", icon: CalendarDays, badgeKey: "citasBadge" },
+  { href: "/clientes", label: "Clientes", icon: Users, badgeKey: null },
+  { href: "/leads", label: "Leads", icon: Target, badgeKey: "leadsBadge" },
+  { href: "/ingresos", label: "Ingresos", icon: TrendingUp, badgeKey: null },
+  { href: "/cava", label: "Cava IA", icon: Bot, badgeKey: "cavaBadge" },
+  { href: "/sistema", label: "Sistema", icon: Settings2, badgeKey: null },
 ];
 
 interface SidebarProps {
@@ -25,9 +28,15 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const stats = useDashboardStats();
   const [logoClicks, setLogoClicks] = useState(0);
   const [easterEgg, setEasterEgg] = useState(false);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const navItems = BASE_NAV.map(item => ({
+    ...item,
+    badge: item.badgeKey && stats[item.badgeKey] > 0 ? String(stats[item.badgeKey]) : null,
+  }));
 
   function handleLogoClick() {
     const newCount = logoClicks + 1;
@@ -78,7 +87,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-gold animate-glow">
               <span className="text-black font-black text-lg">C</span>
             </div>
-            {/* Particles */}
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-gold-400 animate-particle-1 opacity-70" />
             <span className="absolute -bottom-1 -left-1 w-1.5 h-1.5 rounded-full bg-gold-300 animate-particle-2 opacity-60" />
             <span className="absolute top-0 left-0 w-1 h-1 rounded-full bg-gold-500 animate-particle-3 opacity-80" />
@@ -92,14 +100,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           )}
         </div>
 
-        {/* Divider */}
         <div className="h-px bg-[rgba(255,255,255,0.06)] mx-3 mb-2" />
 
         {/* Navigation */}
         <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => {
+          {navItems.map(({ href, label, icon: Icon, badge }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            const isError = badge === "!";
             return (
               <Link
                 key={href}
@@ -122,21 +128,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <span className="flex-1 truncate">{label}</span>
                 )}
                 {!collapsed && badge && (
-                  <span className={cn(
-                    "text-xs px-1.5 py-0.5 rounded-full font-semibold animate-badge-bounce",
-                    isError
-                      ? "bg-red-500/20 text-red-400"
-                      : "bg-gold-500/20 text-gold-400"
-                  )}>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold animate-badge-bounce bg-gold-500/20 text-gold-400">
                     {badge}
                   </span>
                 )}
                 {collapsed && badge && (
-                  <span className={cn(
-                    "absolute top-1 right-1 w-4 h-4 text-xs rounded-full flex items-center justify-center font-bold",
-                    isError ? "bg-red-500 text-white" : "bg-gold text-black"
-                  )}>
-                    {isError ? "!" : badge.length > 1 ? "+" : badge}
+                  <span className="absolute top-1 right-1 w-4 h-4 text-xs rounded-full flex items-center justify-center font-bold bg-gold text-black">
+                    {badge.length > 1 ? "+" : badge}
                   </span>
                 )}
                 {active && (
