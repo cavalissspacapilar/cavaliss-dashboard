@@ -5,9 +5,10 @@ export interface DashboardStats {
   citasBadge: number;
   leadsBadge: number;
   cavaBadge: number;
+  iqBadge: number;
 }
 
-const DEFAULT: DashboardStats = { citasBadge: 0, leadsBadge: 0, cavaBadge: 0 };
+const DEFAULT: DashboardStats = { citasBadge: 0, leadsBadge: 0, cavaBadge: 0, iqBadge: 0 };
 const DashboardStatsContext = createContext<DashboardStats>(DEFAULT);
 
 export function DashboardStatsProvider({ children }: { children: React.ReactNode }) {

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>Cavaliss · Protocolo Cancún — Cuero Cabelludo V2</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .ad {
+      width: 1080px;
+      height: 1920px;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ═══════════════════════════════════════════
+       ZONA 1 — MARCA  (192px)
+    ═══════════════════════════════════════════ */
+    .zone-brand {
+      height: 192px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .brand-line {
+      width: 48px;
+      height: 1px;
+      background: #C9A84C;
+      opacity: 0.45;
+    }
+
+    /* F: letter-spacing 4px → 2px */
+    .brand-label {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      color: #C9A84C;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* ═══════════════════════════════════════════
+       ZONA 2 — TITULAR  (288px)
+    ═══════════════════════════════════════════ */
+    .zone-headline {
+      height: 288px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 60px;
+    }
+
+    .headline-1 {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }
+
+    /* E: headline-2 no tiene margin-bottom, separador eliminado */
+    .headline-2 {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #C9A84C;
+      text-align: center;
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }
+
+    /* ═══════════════════════════════════════════
+       ZONA 3 — IMAGEN  (920px)
+    ═══════════════════════════════════════════ */
+    .zone-image {
+      height: 920px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 90px 0 130px;
+    }
+
+    /* A: foto clienta/especialista — fondo al 40% de opacidad */
+    .img-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      opacity: 0.4;
+      display: block;
+    }
+
+    /* Oscurecedor adicional sobre el fondo */
+    .bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(13, 13, 13, 0.28);
+      pointer-events: none;
+    }
+
+    /* Degradado superior: funde con zona headline */
+    .fade-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 90px;
+      background: linear-gradient(to bottom, #0d0d0d, transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Degradado inferior: funde con zona CTA */
+    .fade-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 130px;
+      background: linear-gradient(to top, #0d0d0d, transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* ─── A: Marco microscópico protagonista ─── */
+    .micro-frame {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* A: 70% del ancho = 756px · borde dorado 2px */
+    .micro-img-wrap {
+      width: 756px;
+      height: 590px;
+      border: 2px solid #C9A84C;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(201,168,76,0.12),
+        0 0 80px rgba(201,168,76,0.14),
+        0 24px 80px rgba(0,0,0,0.75);
+    }
+
+    /* Imagen en el marco: enfoca zona del cuero cabelludo (parte superior derecha) */
+    .micro-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 72% 18%;
+      display: block;
+    }
+
+    /* Viñeta sutil dentro del marco */
+    .micro-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(0,0,0,0.32) 100%);
+      pointer-events: none;
+    }
+
+    /* Esquinas de diagnóstico clínico */
+    .corner {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      pointer-events: none;
+    }
+    .c-tl { top:  12px; left:  12px; border-top: 2px solid #C9A84C; border-left:  2px solid #C9A84C; }
+    .c-tr { top:  12px; right: 12px; border-top: 2px solid #C9A84C; border-right: 2px solid #C9A84C; }
+    .c-bl { bottom: 12px; left:  12px; border-bottom: 2px solid #C9A84C; border-left:  2px solid #C9A84C; }
+    .c-br { bottom: 12px; right: 12px; border-bottom: 2px solid #C9A84C; border-right: 2px solid #C9A84C; }
+
+    /* Etiqueta técnica dentro del marco (esquina superior izquierda) */
+    .micro-scan-label {
+      position: absolute;
+      top: 18px;
+      left: 52px;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      color: rgba(201,168,76,0.75);
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    /* Caption de tricocámara debajo del marco */
+    .micro-caption {
+      margin-top: 16px;
+      font-size: 17px;
+      color: rgba(255,255,255,0.38);
+      letter-spacing: 1px;
+      font-weight: 300;
+      text-align: center;
+    }
+
+    /* A: Badge sólido negro con borde dorado — debajo de la imagen */
+    .micro-badge {
+      margin-top: 18px;
+      background: #0d0d0d;
+      border: 1.5px solid #C9A84C;
+      color: #ffffff;
+      font-size: 20px;
+      letter-spacing: 0.8px;
+      font-weight: 500;
+      padding: 14px 36px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+
+    .badge-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #C9A84C;
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(201,168,76,0.7);
+    }
+
+    /* ═══════════════════════════════════════════
+       ZONA 4 — CONVERSIÓN  (520px)
+    ═══════════════════════════════════════════ */
+    .zone-cta {
+      height: 520px;
+      flex-shrink: 0;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 80px 28px;
+      gap: 0;
+    }
+
+    /* B: Dato duro — número grande */
+    .stat-number {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 84px;
+      font-weight: 700;
+      color: #C9A84C;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 21px;
+      color: #ffffff;
+      font-weight: 300;
+      text-align: center;
+      letter-spacing: 0.2px;
+      margin-top: 8px;
+    }
+
+    .stat-sep {
+      width: 48px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #C9A84C, transparent);
+      margin: 20px auto 22px;
+    }
+
+    /* C: Micro-promesa */
+    .promise-1 {
+      font-size: 21px;
+      font-style: italic;
+      color: #ffffff;
+      text-align: center;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    .promise-2 {
+      font-size: 21px;
+      font-weight: 700;
+      color: #C9A84C;
+      text-align: center;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* D: Badge urgencia — prominente, encima del botón */
+    .urgency-badge {
+      width: 70%;
+      background: #C9A84C;
+      border-radius: 4px;
+      padding: 17px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .urgency-text {
+      font-size: 19px;
+      font-weight: 700;
+      color: #0d0d0d;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    /* G: Botón CTA — más grande, imposible de ignorar */
+    .cta-button {
+      width: 85%;
+      padding: 40px 0;
+      background: #C9A84C;
+      color: #0d0d0d;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      border-radius: 3px;
+      line-height: 1;
+    }
+
+    /* Zona Hotelera · Cancún — pequeño, debajo del botón */
+    .cta-location {
+      margin-top: 16px;
+      font-size: 17px;
+      color: rgba(201,168,76,0.5);
+      text-align: center;
+      letter-spacing: 1px;
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <div class="ad">
+
+    <!-- ══ ZONA 1: MARCA ══ -->
+    <div class="zone-brand">
+      <div class="brand-line"></div>
+      <div class="brand-label">CAVALISS · DIAGNÓSTICO CAPILAR</div><!-- F: 2px -->
+      <div class="brand-line"></div>
+    </div>
+
+    <!-- ══ ZONA 2: TITULAR ══ -->
+    <div class="zone-headline">
+      <div class="headline-1">Cinco años de Cancún</div>
+      <div class="headline-2">viven en tu raíz.</div>
+      <!-- E: separador eliminado — headline respira directo a la imagen -->
+    </div>
+
+    <!-- ══ ZONA 3: IMAGEN ══ -->
+    <div class="zone-image">
+
+      <!-- A: Foto clienta/especialista — fondo oscurecido al 40% -->
+      <img class="img-bg" src="ad-reference.jpg" alt="" />
+      <div class="bg-overlay"></div>
+      <div class="fade-top"></div>
+      <div class="fade-bottom"></div>
+
+      <!-- A: Imagen microscópica protagonista al centro -->
+      <div class="micro-frame">
+
+        <div class="micro-img-wrap">
+          <!-- Misma imagen, enfocada en zona del cuero cabelludo -->
+          <img src="ad-reference.jpg" alt="Cuero cabelludo bajo tricocámara · Cavaliss" />
+          <div class="micro-vignette"></div>
+          <!-- Esquinas clínicas -->
+          <div class="corner c-tl"></div>
+          <div class="corner c-tr"></div>
+          <div class="corner c-bl"></div>
+          <div class="corner c-br"></div>
+          <!-- Etiqueta técnica inline -->
+          <div class="micro-scan-label">TRICOSCOPIO · 60×</div>
+        </div>
+
+        <div class="micro-caption">Vista bajo tricocámara · Cavaliss Spa Capilar</div>
+
+        <!-- A: Badge sólido negro + borde dorado — debajo de imagen, no tooltip -->
+        <div class="micro-badge">
+          <div class="badge-dot"></div>
+          Folículo obstruido detectado
+        </div>
+
+      </div>
+    </div><!-- /zone-image -->
+
+    <!-- ══ ZONA 4: CONVERSIÓN ══ -->
+    <div class="zone-cta">
+
+      <!-- B: Dato duro (reemplaza testimonio) -->
+      <div class="stat-number">847</div>
+      <div class="stat-label">diagnósticos realizados en Cancún</div>
+      <div class="stat-sep"></div>
+
+      <!-- C: Micro-promesa emocional -->
+      <div class="promise-1">Tu diagnóstico tarda 20 minutos.</div>
+      <div class="promise-2">El daño lleva años acumulándose.</div>
+
+      <!-- D: Badge urgencia visual — FOMO activado -->
+      <div class="urgency-badge">
+        <span style="font-size:22px; line-height:1;">🔥</span>
+        <span class="urgency-text">SOLO 10 LUGARES ESTA SEMANA</span>
+      </div>
+
+      <!-- G: CTA imposible de ignorar -->
+      <div class="cta-button">QUIERO VER EL MÍO →</div>
+
+      <div class="cta-location">Zona Hotelera · Cancún</div>
+
+    </div>
+
+  </div>
+</body>
+</html>

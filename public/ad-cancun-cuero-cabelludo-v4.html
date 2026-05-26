@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>Cavaliss · Protocolo Cancún — Cuero Cabelludo V4</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .ad {
+      width: 1080px;
+      height: 1920px;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ══ ZONA 1 — MARCA (180px) ══ */
+    .zone-brand {
+      height: 180px;
+      flex-shrink: 0;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .brand-line {
+      width: 44px;
+      height: 1px;
+      background: #C9A84C;
+      opacity: 0.45;
+    }
+
+    .brand-label {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      color: #C9A84C;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* ══ ZONA 2 — TITULAR (260px) — SIN TOCAR ══ */
+    .zone-headline {
+      height: 260px;
+      flex-shrink: 0;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 60px;
+    }
+
+    .headline-1 {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }
+
+    .headline-2 {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #C9A84C;
+      text-align: center;
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }
+
+    /* ══ ZONA 3 — IMAGEN (880px) ══ */
+    .zone-image {
+      height: 880px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 90px 0 120px;
+    }
+
+    /* Foto clienta/especialista — fondo al 40% de opacidad */
+    .img-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      opacity: 0.4;
+      display: block;
+    }
+
+    /*
+      FIX 3: overlay muy oscuro para suprimir completamente cualquier
+      texto o leyenda que venga dentro de ad-reference.jpg
+      (texto "Carla Gómez" provenía de la foto original filtrándose)
+    */
+    .bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 17, 17, 0.72);
+      pointer-events: none;
+    }
+
+    .fade-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 90px;
+      background: linear-gradient(to bottom, #111111, transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .fade-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 120px;
+      background: linear-gradient(to top, #111111, transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Marco microscópico protagonista */
+    .micro-frame {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .micro-img-wrap {
+      width: 756px;
+      height: 570px;
+      border: 2px solid #C9A84C;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(201,168,76,0.10),
+        0 0 80px rgba(201,168,76,0.16),
+        0 24px 80px rgba(0,0,0,0.80);
+    }
+
+    .micro-img-wrap > img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 72% 18%;
+      display: block;
+    }
+
+    .micro-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 60%, transparent 38%, rgba(0,0,0,0.36) 100%);
+      pointer-events: none;
+    }
+
+    /*
+      FIX 2 — Gradiente superior único y limpio.
+      Opacidad elevada a 0.88 para eliminar el "ghost" que se veía
+      por la semitransparencia anterior (0.72) sobre la imagen.
+      MEJORA: altura extendida de 260px (≈45%) a 290px (≈51%)
+      con plateau: opacidad plena los primeros 45%, luego fade.
+      Solo existe UNA capa de texto — text-shadow eliminado.
+    */
+    .micro-top-gradient {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 290px;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.88) 0%,
+        rgba(0,0,0,0.88) 45%,
+        rgba(0,0,0,0)    100%
+      );
+      pointer-events: none;
+      display: flex;
+      align-items: flex-start;
+      padding: 36px 36px 0;
+    }
+
+    /* FIX 2: sin text-shadow — una sola capa de texto, sin eco */
+    .micro-frame-text {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 52px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.12;
+    }
+
+    /* Esquinas clínicas — sin tocar */
+    .corner {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      pointer-events: none;
+    }
+    .c-tl { top: 12px; left:  12px; border-top: 2px solid #C9A84C; border-left:  2px solid #C9A84C; }
+    .c-tr { top: 12px; right: 12px; border-top: 2px solid #C9A84C; border-right: 2px solid #C9A84C; }
+    .c-bl { bottom: 12px; left:  12px; border-bottom: 2px solid #C9A84C; border-left:  2px solid #C9A84C; }
+    .c-br { bottom: 12px; right: 12px; border-bottom: 2px solid #C9A84C; border-right: 2px solid #C9A84C; }
+
+    /* TRICOSCOPIO — sin tocar */
+    .micro-scan-label {
+      position: absolute;
+      top: 20px;
+      right: 48px;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      color: rgba(201,168,76,0.65);
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    /* Badge "Folículo obstruido" DENTRO del frame — sin tocar */
+    .micro-badge {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(17, 17, 17, 0.85);
+      border-radius: 6px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .badge-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22C55E;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(34,197,94,0.65);
+    }
+
+    .badge-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+      letter-spacing: 0.2px;
+    }
+
+    .micro-caption {
+      margin-top: 14px;
+      font-size: 16px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 1px;
+      font-weight: 300;
+      text-align: center;
+    }
+
+    /* ══ ZONA 4 — CONVERSIÓN (600px) ══ */
+    .zone-cta {
+      height: 600px;
+      flex-shrink: 0;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 80px 20px;
+      gap: 0;
+    }
+
+    /*
+      FIX 1 + FIX 3 (espacio liberado):
+      "+127" — mismo color #C9A84C, mismo tamaño,
+      escalado ligeramente a 92px para respirar mejor.
+    */
+    .stat-number {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 92px;
+      font-weight: 700;
+      color: #C9A84C;
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* FIX 1: "diagnósticos este mes en Cancún" */
+    .stat-label {
+      font-size: 22px;
+      color: #ffffff;
+      font-weight: 300;
+      text-align: center;
+      letter-spacing: 0.2px;
+      margin-top: 10px;
+    }
+
+    .stat-sep {
+      width: 44px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #C9A84C, transparent);
+      margin: 22px auto 22px;
+    }
+
+    /* FIX 3: micro-promesa escalada a 26px para respirar mejor */
+    .promise-1 {
+      font-size: 26px;
+      font-style: normal;
+      font-weight: 400;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .promise-2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #C9A84C;
+      text-align: center;
+      line-height: 1.45;
+      margin-bottom: 22px;
+    }
+
+    /* Botón URGENCIA (secundario) — sin tocar jerarquía */
+    .urgency-btn {
+      width: 85%;
+      height: 54px;
+      background: transparent;
+      border: 2px solid #C9A84C;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .urgency-btn-text {
+      font-size: 28px;
+      font-weight: 700;
+      color: #C9A84C;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    /* Botón CTA (primario) — sin tocar */
+    .cta-button {
+      width: 85%;
+      padding: 20px 0;
+      background: #C9A84C;
+      color: #111111;
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      border-radius: 3px;
+      line-height: 1;
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cta-location {
+      margin-top: 14px;
+      font-size: 16px;
+      color: rgba(201,168,76,0.48);
+      text-align: center;
+      letter-spacing: 1px;
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <div class="ad">
+
+    <!-- ZONA 1: MARCA -->
+    <div class="zone-brand">
+      <div class="brand-line"></div>
+      <div class="brand-label">CAVALISS · DIAGNÓSTICO CAPILAR</div>
+      <div class="brand-line"></div>
+    </div>
+
+    <!-- ZONA 2: TITULAR — SIN TOCAR -->
+    <div class="zone-headline">
+      <div class="headline-1">Cinco años de Cancún</div>
+      <div class="headline-2">viven en tu raíz.</div>
+    </div>
+
+    <!-- ZONA 3: IMAGEN -->
+    <div class="zone-image">
+
+      <!-- Fondo: foto al 40% de opacidad -->
+      <img class="img-bg" src="ad-reference.jpg" alt="" />
+      <!-- FIX 3: overlay fuerte elimina texto fantasma de la foto original -->
+      <div class="bg-overlay"></div>
+      <div class="fade-top"></div>
+      <div class="fade-bottom"></div>
+
+      <div class="micro-frame">
+        <div class="micro-img-wrap">
+
+          <img src="ad-reference.jpg" alt="Cuero cabelludo bajo tricocámara · Cavaliss" />
+          <div class="micro-vignette"></div>
+
+          <!-- FIX 2: gradiente único sin ghost — opacidad 0.88, plateau 45%, sin text-shadow -->
+          <div class="micro-top-gradient">
+            <div class="micro-frame-text">Detecta impurezas<br>y causas de caída</div>
+          </div>
+
+          <div class="corner c-tl"></div>
+          <div class="corner c-tr"></div>
+          <div class="corner c-bl"></div>
+          <div class="corner c-br"></div>
+
+          <!-- TRICOSCOPIO — sin tocar -->
+          <div class="micro-scan-label">TRICOSCOPIO · 60×</div>
+
+          <!-- Badge dentro del frame — sin tocar -->
+          <div class="micro-badge">
+            <div class="badge-dot"></div>
+            <span class="badge-text">Folículo obstruido detectado</span>
+          </div>
+
+        </div><!-- /micro-img-wrap -->
+
+        <div class="micro-caption">Vista bajo tricocámara · Cavaliss Spa Capilar</div>
+      </div><!-- /micro-frame -->
+
+    </div><!-- /zone-image -->
+
+    <!-- ZONA 4: CONVERSIÓN -->
+    <div class="zone-cta">
+
+      <!-- FIX 1: "+127" + "este mes" -->
+      <div class="stat-number">+127</div>
+      <div class="stat-label">diagnósticos este mes en Cancún</div>
+      <div class="stat-sep"></div>
+
+      <!-- FIX 3: micro-promesa escalada, sin itálica -->
+      <div class="promise-1">Tu diagnóstico tarda 20 minutos.</div>
+      <div class="promise-2">El daño lleva años acumulándose.</div>
+
+      <!-- Botón urgencia secundario — sin tocar jerarquía -->
+      <div class="urgency-btn">
+        <span style="font-size:26px; line-height:1;">🔥</span>
+        <span class="urgency-btn-text">SOLO 10 LUGARES ESTA SEMANA</span>
+      </div>
+
+      <!-- CTA primario — sin tocar -->
+      <div class="cta-button">QUIERO VER EL MÍO →</div>
+
+      <div class="cta-location">Zona Hotelera · Cancún</div>
+
+    </div>
+
+  </div>
+</body>
+</html>

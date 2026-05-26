@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>Cavaliss · Protocolo Cancún — Cuero Cabelludo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .ad {
+      width: 1080px;
+      height: 1920px;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── ZONA 1: Marca (10% = 192px) ── */
+    .zone-brand {
+      height: 192px;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .brand-line-top {
+      width: 48px;
+      height: 1px;
+      background: #C9A84C;
+      opacity: 0.5;
+    }
+
+    .brand-label {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      color: #C9A84C;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .brand-line-bottom {
+      width: 48px;
+      height: 1px;
+      background: #C9A84C;
+      opacity: 0.5;
+    }
+
+    /* ── ZONA 2: Titular (15% = 288px) ── */
+    .zone-headline {
+      height: 288px;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-shrink: 0;
+      padding: 0 60px;
+    }
+
+    .headline-1 {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }
+
+    .headline-2 {
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #C9A84C;
+      text-align: center;
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+      margin-bottom: 32px;
+    }
+
+    .headline-separator {
+      width: 40%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #C9A84C, transparent);
+    }
+
+    /* ── ZONA 3: Imagen (50% = 960px) ── */
+    .zone-image {
+      height: 960px;
+      position: relative;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .zone-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      display: block;
+    }
+
+    /* Viñeta perimetral */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at center,
+          transparent 30%,
+          rgba(0, 0, 0, 0.45) 70%,
+          rgba(0, 0, 0, 0.72) 100%
+        );
+      pointer-events: none;
+    }
+
+    /* Overlay superior degradado para transición suave desde titular */
+    .image-fade-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 90px;
+      background: linear-gradient(to bottom, #0d0d0d, transparent);
+      pointer-events: none;
+    }
+
+    /* Overlay inferior degradado */
+    .image-fade-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 120px;
+      background: linear-gradient(to top, #0d0d0d, transparent);
+      pointer-events: none;
+    }
+
+    /* Marcador diagnóstico */
+    .marker {
+      position: absolute;
+      top: 38%;
+      left: 58%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      pointer-events: none;
+    }
+
+    .marker-label {
+      background: rgba(13, 13, 13, 0.82);
+      border: 1px solid rgba(201, 168, 76, 0.6);
+      color: #ffffff;
+      font-size: 19px;
+      letter-spacing: 0.5px;
+      padding: 7px 14px;
+      white-space: nowrap;
+      line-height: 1;
+      border-radius: 2px;
+    }
+
+    .marker-line {
+      width: 1px;
+      height: 52px;
+      background: linear-gradient(to bottom, #C9A84C, rgba(201, 168, 76, 0.3));
+      margin-left: 22px;
+    }
+
+    .marker-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #C9A84C;
+      border: 2px solid #0d0d0d;
+      box-shadow: 0 0 0 2px #C9A84C;
+      margin-left: 17px;
+    }
+
+    /* Pie de imagen */
+    .image-caption {
+      position: absolute;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .image-caption-inner {
+      background: rgba(0, 0, 0, 0.68);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      padding: 10px 28px;
+      border-radius: 2px;
+      font-weight: 300;
+    }
+
+    /* ── ZONA 4: Conversión (25% = 480px) ── */
+    .zone-cta {
+      height: 480px;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      padding: 0 80px;
+      gap: 0;
+    }
+
+    .cta-body-text {
+      font-size: 28px;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.6;
+      font-weight: 300;
+      letter-spacing: 0.2px;
+      margin-bottom: 52px;
+    }
+
+    .cta-button {
+      width: 85%;
+      padding: 36px 0;
+      background: #C9A84C;
+      color: #0d0d0d;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      border-radius: 3px;
+      margin-bottom: 28px;
+      line-height: 1;
+    }
+
+    .cta-sub {
+      font-size: 20px;
+      color: #C9A84C;
+      text-align: center;
+      letter-spacing: 1px;
+      font-weight: 400;
+    }
+
+    .cta-dots {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 36px;
+    }
+
+    .cta-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #C9A84C;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="ad">
+
+    <!-- ── ZONA 1: MARCA ── -->
+    <div class="zone-brand">
+      <div class="brand-line-top"></div>
+      <div class="brand-label">CAVALISS · DIAGNÓSTICO CAPILAR</div>
+      <div class="brand-line-bottom"></div>
+    </div>
+
+    <!-- ── ZONA 2: TITULAR ── -->
+    <div class="zone-headline">
+      <div class="headline-1">Cinco años de Cancún</div>
+      <div class="headline-2">viven en tu raíz.</div>
+      <div class="headline-separator"></div>
+    </div>
+
+    <!-- ── ZONA 3: IMAGEN ── -->
+    <div class="zone-image">
+      <img src="ad-reference.jpg" alt="Diagnóstico capilar con tricocámara · Cavaliss Spa Capilar" />
+      <div class="vignette"></div>
+      <div class="image-fade-top"></div>
+      <div class="image-fade-bottom"></div>
+
+      <!-- Marcador diagnóstico -->
+      <div class="marker">
+        <div class="marker-label">Folículo obstruido detectado</div>
+        <div class="marker-line"></div>
+        <div class="marker-dot"></div>
+      </div>
+
+      <!-- Pie de imagen -->
+      <div class="image-caption">
+        <div class="image-caption-inner">Vista bajo tricocámara · Cavaliss Spa Capilar</div>
+      </div>
+    </div>
+
+    <!-- ── ZONA 4: CONVERSIÓN ── -->
+    <div class="zone-cta">
+      <div class="cta-dots">
+        <div class="cta-dot"></div>
+        <div class="cta-dot"></div>
+        <div class="cta-dot"></div>
+      </div>
+      <div class="cta-body-text">
+        "Lo que ves aquí puede estar<br />
+        en tu folículo ahora mismo."
+      </div>
+      <div class="cta-button">QUIERO VER EL MÍO →</div>
+      <div class="cta-sub">Solo 10 lugares · Zona Hotelera · Cancún</div>
+    </div>
+
+  </div>
+</body>
+</html>

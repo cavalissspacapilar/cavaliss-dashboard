@@ -9,15 +9,24 @@ import {
 import { cn } from "@/lib/utils";
 import { useDashboardStats } from "@/lib/context/DashboardStatsContext";
 
-type BadgeKey = "citasBadge" | "leadsBadge" | "cavaBadge";
+type BadgeKey = "citasBadge" | "leadsBadge" | "cavaBadge" | "iqBadge";
 
-const BASE_NAV: { href: string; label: string; icon: React.ElementType; badgeKey: BadgeKey | null }[] = [
+type BadgeVariant = "gold" | "red";
+
+const BASE_NAV: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badgeKey: BadgeKey | null;
+  badgeVariant?: BadgeVariant;
+}[] = [
   { href: "/", label: "Inicio", icon: LayoutDashboard, badgeKey: null },
   { href: "/citas", label: "Citas", icon: CalendarDays, badgeKey: "citasBadge" },
   { href: "/clientes", label: "Clientes", icon: Users, badgeKey: null },
   { href: "/leads", label: "Leads", icon: Target, badgeKey: "leadsBadge" },
   { href: "/ingresos", label: "Ingresos", icon: TrendingUp, badgeKey: null },
   { href: "/cava", label: "Cava IA", icon: Bot, badgeKey: "cavaBadge" },
+  { href: "/iq", label: "Cavaliss IQ", icon: Sparkles, badgeKey: "iqBadge", badgeVariant: "red" },
   { href: "/sistema", label: "Sistema", icon: Settings2, badgeKey: null },
 ];
 
@@ -36,6 +45,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navItems = BASE_NAV.map(item => ({
     ...item,
     badge: item.badgeKey && stats[item.badgeKey] > 0 ? String(stats[item.badgeKey]) : null,
+    badgeVariant: item.badgeVariant ?? ("gold" as BadgeVariant),
   }));
 
   function handleLogoClick() {
@@ -104,7 +114,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ href, label, icon: Icon, badge }) => {
+          {navItems.map(({ href, label, icon: Icon, badge, badgeVariant }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
@@ -128,12 +138,22 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <span className="flex-1 truncate">{label}</span>
                 )}
                 {!collapsed && badge && (
-                  <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold animate-badge-bounce bg-gold-500/20 text-gold-400">
+                  <span className={cn(
+                    "text-xs px-1.5 py-0.5 rounded-full font-semibold animate-badge-bounce",
+                    badgeVariant === "red"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-gold-500/20 text-gold-400"
+                  )}>
                     {badge}
                   </span>
                 )}
                 {collapsed && badge && (
-                  <span className="absolute top-1 right-1 w-4 h-4 text-xs rounded-full flex items-center justify-center font-bold bg-gold text-black">
+                  <span className={cn(
+                    "absolute top-1 right-1 w-4 h-4 text-xs rounded-full flex items-center justify-center font-bold",
+                    badgeVariant === "red"
+                      ? "bg-red-500 text-white"
+                      : "bg-gold text-black"
+                  )}>
                     {badge.length > 1 ? "+" : badge}
                   </span>
                 )}
