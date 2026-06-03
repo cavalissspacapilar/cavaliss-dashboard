@@ -57,9 +57,8 @@ export async function GET() {
 
   // Badge 4: IQ — clientas con riesgo_abandono alto/critico
   try {
-    const IQ_BASE = "https://cavaliss-spa-capilar.base44.app/api/apps/69bcfa4ccfa83545153ba491";
-    const res = await fetch(`${IQ_BASE}/entities/PerfilCapilarV2`, {
-      headers: { Authorization: "Bearer 71cf179e00514bbda1ab089a5729c4b9" },
+    const res = await fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2`, {
+      headers: { api_key: process.env.BASE44_API_KEY! },
       next: { revalidate: 300 },
     });
     if (res.ok) {

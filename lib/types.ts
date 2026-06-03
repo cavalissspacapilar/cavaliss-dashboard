@@ -14,8 +14,6 @@ export type ClientSegment = "VIP" | "Regular" | "Nueva";
 export type LeadStatus = "Nuevo" | "En conversación" | "Lead caliente" | "Reserva lista" | "Convertido" | "Perdido";
 export type LeadSource = "Meta Ads" | "TikTok" | "Instagram" | "WhatsApp directo";
 export type LeadTemperature = "caliente" | "tibio" | "frío";
-export type WorkflowStatusType = "activo" | "error" | "advertencia";
-
 export interface Client {
   id: number;
   name: string;
@@ -89,18 +87,6 @@ export interface CavaConversation {
   responseTime: number;
 }
 
-export interface Workflow {
-  id: number;
-  name: string;
-  description: string;
-  status: WorkflowStatusType;
-  lastRun: string;
-  nextRun?: string;
-  executionsToday: number;
-  successRate: number;
-  monthlyCost: number;
-  lastError?: string;
-}
 
 export interface ActivityItem {
   id: number;

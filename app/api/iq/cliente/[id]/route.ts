@@ -5,9 +5,6 @@ import type {
   IQClienteDetail,
 } from "@/lib/iq-types";
 
-const BASE44_BASE =
-  "https://cavaliss-spa-capilar.base44.app/api/apps/69bcfa4ccfa83545153ba491";
-const BASE44_TOKEN = "71cf179e00514bbda1ab089a5729c4b9";
 
 function parseItems(json: unknown): Record<string, unknown>[] {
   if (Array.isArray(json)) return json as Record<string, unknown>[];
@@ -33,9 +30,9 @@ export async function GET(
   // ── 1. Fetch PerfilCapilarV2 ──────────────────────────────────────────────
   try {
     const res = await fetch(
-      `${BASE44_BASE}/entities/PerfilCapilarV2?query=${buildQuery(id)}`,
+      `${process.env.BASE44_API_URL}/PerfilCapilarV2?query=${buildQuery(id)}`,
       {
-        headers: { Authorization: `Bearer ${BASE44_TOKEN}` },
+        headers: { api_key: process.env.BASE44_API_KEY! },
         next: { revalidate: 60 },
       }
     );
@@ -86,9 +83,9 @@ export async function GET(
   // ── 2. Fetch HistorialCapilarSnapshot ─────────────────────────────────────
   try {
     const res = await fetch(
-      `${BASE44_BASE}/entities/HistorialCapilarSnapshot?query=${buildQuery(id)}`,
+      `${process.env.BASE44_API_URL}/HistorialCapilarSnapshot?query=${buildQuery(id)}`,
       {
-        headers: { Authorization: `Bearer ${BASE44_TOKEN}` },
+        headers: { api_key: process.env.BASE44_API_KEY! },
         next: { revalidate: 60 },
       }
     );

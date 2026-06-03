@@ -1,19 +1,21 @@
 "use client";
-import { AlertTriangle, AlertCircle, Flame, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Flame, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ALERTS = [
+interface HealthData {
+  env: {
+    GOOGLE_SERVICE_ACCOUNT_KEY: boolean;
+    GOOGLE_SHEETS_ID: boolean;
+    BASE44_API_KEY: boolean;
+    STRIPE_SECRET_KEY: boolean;
+  };
+  sheetsTest: { ok: boolean; rowCount?: number; error?: string } | null;
+}
+
+const CONTEXTUAL_ALERTS = [
   {
-    id: 1,
-    level: "error" as const,
-    title: "Integración Stripe→CRM con errores",
-    desc: "El workflow de Stripe no ha sincronizado en las últimas horas. Revisar clave secreta en n8n.",
-    icon: AlertCircle,
-    action: "Ver sistema",
-    href: "/sistema",
-  },
-  {
-    id: 2,
+    id: "anticipos",
     level: "warning" as const,
     title: "Citas pendientes de anticipo",
     desc: "Revisa la agenda de hoy para identificar citas sin pago de anticipo confirmado.",
@@ -22,7 +24,7 @@ const ALERTS = [
     href: "/citas",
   },
   {
-    id: 3,
+    id: "leads",
     level: "hot" as const,
     title: "Leads calientes en conversación",
     desc: "Cava está gestionando leads activos. Revisa el pipeline para dar seguimiento prioritario.",
@@ -30,51 +32,86 @@ const ALERTS = [
     action: "Ver leads",
     href: "/leads",
   },
-  {
-    id: 4,
-    level: "warning" as const,
-    title: "Sincronización Base44 → Sheets",
-    desc: "El workflow de exportación tiene latencia. Puede ser cuota de la API de Google Sheets.",
-    icon: AlertTriangle,
-    action: "Ver sistema",
-    href: "/sistema",
-  },
 ];
 
 const LEVEL_STYLES = {
-  error: "border-red-500/25 bg-red-500/5 text-red-400",
+  success: "border-emerald-500/25 bg-emerald-500/5 text-emerald-400",
+  error:   "border-red-500/25 bg-red-500/5 text-red-400",
   warning: "border-amber-500/25 bg-amber-500/5 text-amber-400",
-  hot: "border-orange-500/25 bg-orange-500/5 text-orange-400",
-  info: "border-blue-500/25 bg-blue-500/5 text-blue-400",
+  hot:     "border-orange-500/25 bg-orange-500/5 text-orange-400",
 };
 
 export default function AlertsPanel() {
+  const [health, setHealth] = useState<HealthData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then(r => r.ok ? r.json() as Promise<HealthData> : null)
+      .then(data => { if (data) setHealth(data); })
+      .catch(() => {});
+  }, []);
+
+  const allOk = health
+    ? health.env.BASE44_API_KEY &&
+      health.env.STRIPE_SECRET_KEY &&
+      health.env.GOOGLE_SERVICE_ACCOUNT_KEY &&
+      health.env.GOOGLE_SHEETS_ID &&
+      health.sheetsTest?.ok === true
+    : null;
+
+  const systemAlert = health
+    ? allOk
+      ? {
+          id: "system-ok",
+          level: "success" as const,
+          title: "Sistema operando correctamente",
+          desc: "Base44, Google Sheets y Stripe están configurados y respondiendo.",
+          icon: CheckCircle2,
+        }
+      : {
+          id: "system-error",
+          level: "error" as const,
+          title: "Configuración incompleta",
+          desc: buildMissingDesc(health),
+          icon: XCircle,
+        }
+    : null;
+
+  const allAlerts = [
+    ...(systemAlert ? [systemAlert] : []),
+    ...CONTEXTUAL_ALERTS,
+  ];
+
   return (
     <div className="glass-card border border-white/7 p-6">
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-zinc-100 font-semibold text-base">Alertas del sistema</h3>
         <span className="text-xs text-zinc-500 bg-white/5 px-2 py-1 rounded-lg">
-          {ALERTS.length} activas
+          {allAlerts.length} {allAlerts.length === 1 ? "activa" : "activas"}
         </span>
       </div>
 
       <div className="space-y-2.5">
-        {ALERTS.map((alert) => {
+        {allAlerts.map((alert) => {
           const Icon = alert.icon;
+          const href = "href" in alert ? alert.href : undefined;
+          const action = "action" in alert ? alert.action : undefined;
           return (
-            <div key={alert.id} className={cn("border rounded-xl p-3.5 glass-card-hover", LEVEL_STYLES[alert.level])}>
+            <div key={alert.id} className={cn("border rounded-xl p-3.5", LEVEL_STYLES[alert.level])}>
               <div className="flex items-start gap-3">
                 <Icon size={16} className="shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm text-zinc-200">{alert.title}</p>
                   <p className="text-xs text-zinc-500 mt-0.5 leading-snug">{alert.desc}</p>
                 </div>
-                <a
-                  href={alert.href}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors whitespace-nowrap underline underline-offset-2"
-                >
-                  {alert.action}
-                </a>
+                {href && action && (
+                  <a
+                    href={href}
+                    className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors whitespace-nowrap underline underline-offset-2"
+                  >
+                    {action}
+                  </a>
+                )}
               </div>
             </div>
           );
@@ -82,4 +119,15 @@ export default function AlertsPanel() {
       </div>
     </div>
   );
+}
+
+function buildMissingDesc(health: HealthData): string {
+  const missing: string[] = [];
+  if (!health.env.BASE44_API_KEY) missing.push("Base44");
+  if (!health.env.GOOGLE_SERVICE_ACCOUNT_KEY || !health.env.GOOGLE_SHEETS_ID) missing.push("Google Sheets");
+  if (!health.env.STRIPE_SECRET_KEY) missing.push("Stripe");
+  if (health.sheetsTest && !health.sheetsTest.ok) missing.push("conexión Sheets");
+  return missing.length > 0
+    ? `Variables faltantes o con error: ${missing.join(", ")}. Configura en Vercel o .env.local.`
+    : "Revisa /sistema para más detalles.";
 }

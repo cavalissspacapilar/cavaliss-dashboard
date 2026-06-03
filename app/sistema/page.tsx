@@ -1,144 +1,279 @@
 "use client";
-import { useState } from "react";
-import { Activity, CheckCircle2, RefreshCw, DollarSign, Zap } from "lucide-react";
-import { WORKFLOWS } from "@/lib/data";
+import { useState, useEffect } from "react";
+import {
+  CheckCircle2, XCircle, RefreshCw, Database,
+  FileSpreadsheet, CreditCard, MessageSquare, Sparkles, Activity,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { WorkflowStatusType } from "@/lib/types";
 
-const STATUS_CONFIG: Record<WorkflowStatusType, { icon: React.ElementType; color: string; bg: string; label: string }> = {
-  activo: { icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10", label: "Activo" },
-  error: { icon: CheckCircle2, color: "text-red-400", bg: "bg-red-500/10", label: "Error" },
-  advertencia: { icon: CheckCircle2, color: "text-amber-400", bg: "bg-amber-500/10", label: "Advertencia" },
+interface HealthData {
+  env: {
+    GOOGLE_SERVICE_ACCOUNT_KEY: boolean;
+    GOOGLE_SHEETS_ID: boolean;
+    BASE44_API_KEY: boolean;
+    STRIPE_SECRET_KEY: boolean;
+  };
+  sheetsTest: { ok: boolean; rowCount?: number; error?: string } | null;
+}
+
+const EMPTY_HEALTH: HealthData = {
+  env: {
+    GOOGLE_SERVICE_ACCOUNT_KEY: false,
+    GOOGLE_SHEETS_ID: false,
+    BASE44_API_KEY: false,
+    STRIPE_SECRET_KEY: false,
+  },
+  sheetsTest: null,
 };
 
-function WorkflowCard({ wf }: { wf: typeof WORKFLOWS[0] }) {
-  const sc = STATUS_CONFIG[wf.status];
-  const StatusIcon = sc.icon;
-  const [refreshing, setRefreshing] = useState(false);
+const INTEGRATIONS = [
+  {
+    icon: Database,
+    name: "Base44",
+    description: "Citas y perfiles capilares",
+    color: "text-gold",
+    bg: "bg-gold/10",
+  },
+  {
+    icon: FileSpreadsheet,
+    name: "Google Sheets",
+    description: "CRM, leads y conversaciones",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+  },
+  {
+    icon: CreditCard,
+    name: "Stripe",
+    description: "Procesamiento de anticipos",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+  },
+  {
+    icon: MessageSquare,
+    name: "Green API",
+    description: "WhatsApp Business (número 4432)",
+    color: "text-green-400",
+    bg: "bg-green-500/10",
+  },
+  {
+    icon: Sparkles,
+    name: "Cavaliss IQ",
+    description: "Inteligencia capilar",
+    color: "text-cavaliss-pink",
+    bg: "bg-cavaliss-pink/10",
+  },
+];
 
-  function handleRefresh() {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 2000);
-  }
+interface ConnectionCardProps {
+  label: string;
+  connected: boolean;
+  detail?: string;
+}
 
+function ConnectionCard({ label, connected, detail }: ConnectionCardProps) {
   return (
-    <div className="glass-card border border-white/7 p-5 glass-card-hover transition-all duration-200">
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className={cn("p-2 rounded-xl shrink-0 mt-0.5", sc.bg)}>
-            <StatusIcon size={16} className={sc.color} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-zinc-100 font-semibold text-sm truncate">{wf.name}</p>
-            <p className="text-zinc-500 text-xs mt-0.5 leading-snug">{wf.description}</p>
-          </div>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="text-zinc-600 hover:text-zinc-300 transition-colors p-1 shrink-0"
-          title="Refrescar"
-        >
-          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-        </button>
+    <div className={cn(
+      "glass-card border p-5 flex items-start gap-4 glass-card-hover",
+      connected ? "border-emerald-500/20" : "border-red-500/20"
+    )}>
+      <div className={cn("p-2 rounded-xl shrink-0 mt-0.5", connected ? "bg-emerald-500/10" : "bg-red-500/10")}>
+        {connected
+          ? <CheckCircle2 size={18} className="text-emerald-400" />
+          : <XCircle size={18} className="text-red-400" />
+        }
       </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <p className="text-zinc-600 text-[10px] uppercase tracking-wide mb-0.5">Última ejecución</p>
-          <p className="text-zinc-300 text-xs font-medium">{wf.lastRun}</p>
-        </div>
-        <div>
-          <p className="text-zinc-600 text-[10px] uppercase tracking-wide mb-0.5">Hoy</p>
-          <p className="text-zinc-300 text-xs font-medium">{wf.executionsToday} veces</p>
-        </div>
-        <div>
-          <p className="text-zinc-600 text-[10px] uppercase tracking-wide mb-0.5">Éxito</p>
-          <p className="text-emerald-400 text-xs font-bold">{wf.successRate}%</p>
-        </div>
-      </div>
-
-      <div className="mt-3 pt-3 border-t border-white/5">
-        <p className="text-zinc-600 text-xs">
-          {wf.nextRun ? `Próxima: ${wf.nextRun}` : "En espera de activación"}
+      <div className="flex-1 min-w-0">
+        <p className="text-zinc-200 font-semibold text-sm">{label}</p>
+        <p className={cn("text-xs mt-0.5 font-medium", connected ? "text-emerald-400" : "text-red-400")}>
+          {connected ? "Configurado" : "Sin configurar"}
         </p>
+        {detail && <p className="text-zinc-600 text-xs mt-0.5">{detail}</p>}
       </div>
     </div>
   );
 }
 
 export default function SistemaPage() {
-  const active = WORKFLOWS.filter(w => w.status === "activo").length;
-  const totalExec = WORKFLOWS.reduce((s, w) => s + w.executionsToday, 0);
+  const [health, setHealth] = useState<HealthData>(EMPTY_HEALTH);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function load() {
+    try {
+      const res = await fetch("/api/health");
+      if (res.ok) setHealth(await res.json() as HealthData);
+    } catch {}
+    setLoading(false);
+    setRefreshing(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    load();
+  }
+
+  const { env, sheetsTest } = health;
+  const connectedCount = [
+    env.BASE44_API_KEY,
+    env.GOOGLE_SERVICE_ACCOUNT_KEY && env.GOOGLE_SHEETS_ID,
+    env.STRIPE_SECRET_KEY,
+    sheetsTest?.ok,
+  ].filter(Boolean).length;
+  const totalChecks = 4;
+  const allOk = connectedCount === totalChecks;
 
   return (
     <div className="space-y-6 max-w-[1400px]">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Estado del Sistema</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">Automatizaciones n8n · Monitoreo en tiempo real</p>
-      </div>
-
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {[
-          { label: "Workflows activos", value: active, icon: Activity, color: "text-emerald-400" },
-          { label: "Con errores", value: 0, icon: Activity, color: "text-zinc-500" },
-          { label: "Ejecuciones hoy", value: totalExec, icon: Zap, color: "text-gold" },
-          { label: "Costo sistema / mes", value: "$47 USD", icon: DollarSign, color: "text-gold" },
-        ].map(k => (
-          <div key={k.label} className="glass-card border border-white/7 p-5 glass-card-hover">
-            <k.icon size={18} className={`${k.color} mb-3`} />
-            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-            <p className="text-zinc-500 text-sm mt-1">{k.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* All-green status banner */}
-      <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 flex items-center gap-3">
-        <CheckCircle2 size={20} className="text-emerald-400 shrink-0" />
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <p className="text-emerald-300 font-semibold text-sm">Todos los sistemas operando con normalidad</p>
-          <p className="text-zinc-500 text-xs mt-0.5">{totalExec} ejecuciones exitosas hoy · {active} workflows activos</p>
+          <h1 className="text-2xl font-bold text-zinc-100">Estado del Sistema</h1>
+          <p className="text-zinc-500 text-sm mt-0.5">
+            Centro de control Cavaliss · Base44 · Stripe · Google Sheets · Green API
+          </p>
         </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing || loading}
+          className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 border border-white/8 hover:border-white/15 px-3 py-2 rounded-xl transition-all disabled:opacity-40"
+        >
+          <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
+          Actualizar
+        </button>
       </div>
 
-      {/* Quick stats */}
-      <div className="flex gap-4 text-xs text-zinc-500 flex-wrap">
-        <span className="flex items-center gap-1.5">
-          <Zap size={12} className="text-gold" />
-          {totalExec} ejecuciones hoy
-        </span>
-        <span>·</span>
-        <span>{WORKFLOWS.length} workflows configurados</span>
-        <span>·</span>
-        <span className="text-gold">Cava IA: activa 24/7</span>
-        <span>·</span>
-        <span className="text-emerald-400">Stripe: ✓ conectado</span>
-        <span>·</span>
-        <span className="text-emerald-400">Base44: ✓ sincronizado</span>
-      </div>
-
-      {/* Workflow cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {WORKFLOWS.map(wf => (
-          <WorkflowCard key={wf.id} wf={wf} />
-        ))}
-      </div>
-
-      {/* Cost section */}
-      <div className="glass-card border border-white/7 p-6">
-        <h3 className="text-zinc-100 font-semibold text-sm mb-4">Costos del sistema este mes</h3>
-        <div className="flex items-center justify-between py-4 border-b border-white/5">
-          <div>
-            <p className="text-zinc-300 font-medium text-sm">n8n Cloud — Plan Starter</p>
+      {/* Summary banner */}
+      <div className={cn(
+        "p-4 rounded-xl border flex items-center gap-3",
+        loading
+          ? "border-zinc-700/40 bg-zinc-800/20"
+          : allOk
+          ? "border-emerald-500/25 bg-emerald-500/5"
+          : "border-amber-500/25 bg-amber-500/5"
+      )}>
+        {loading ? (
+          <Activity size={18} className="text-zinc-600 shrink-0 animate-pulse" />
+        ) : allOk ? (
+          <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+        ) : (
+          <XCircle size={18} className="text-amber-400 shrink-0" />
+        )}
+        <div>
+          <p className={cn(
+            "font-semibold text-sm",
+            loading ? "text-zinc-500" : allOk ? "text-emerald-300" : "text-amber-300"
+          )}>
+            {loading
+              ? "Verificando conexiones..."
+              : allOk
+              ? "Todos los sistemas operando con normalidad"
+              : `${connectedCount} de ${totalChecks} conexiones activas`}
+          </p>
+          {!loading && (
             <p className="text-zinc-500 text-xs mt-0.5">
-              {WORKFLOWS.length} workflows activos · Incluye todas las automatizaciones de Cavaliss
+              {allOk
+                ? "Base44, Google Sheets y Stripe están respondiendo correctamente"
+                : "Revisa las variables de entorno faltantes en Vercel o .env.local"}
             </p>
-          </div>
-          <p className="text-gold font-bold text-sm">$47 USD/mes</p>
+          )}
         </div>
-        <div className="pt-3 flex justify-between items-center">
-          <p className="text-zinc-600 text-xs">Plan renovable mensualmente</p>
-          <p className="text-gold font-bold text-sm">Total: $47 USD/mes</p>
+      </div>
+
+      {/* Section 1: Connection status */}
+      <div>
+        <h2 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          Estado de conexiones
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ConnectionCard
+            label="Base44 — API Key"
+            connected={env.BASE44_API_KEY}
+            detail="Citas, perfiles capilares e historial IQ"
+          />
+          <ConnectionCard
+            label="Google Service Account"
+            connected={env.GOOGLE_SERVICE_ACCOUNT_KEY}
+            detail="Credenciales para leer y escribir en Sheets"
+          />
+          <ConnectionCard
+            label="Google Sheets ID"
+            connected={env.GOOGLE_SHEETS_ID}
+            detail="Hoja de cálculo con Clientes, Leads y Conversaciones"
+          />
+          <ConnectionCard
+            label="Stripe — Secret Key"
+            connected={env.STRIPE_SECRET_KEY}
+            detail="Lectura de payment_intents para ingresos"
+          />
+        </div>
+
+        {/* Sheets test result */}
+        {!loading && sheetsTest !== null && (
+          <div className={cn(
+            "mt-3 p-4 rounded-xl border text-sm flex items-start gap-3",
+            sheetsTest.ok ? "border-emerald-500/15 bg-emerald-500/5" : "border-red-500/15 bg-red-500/5"
+          )}>
+            {sheetsTest.ok
+              ? <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              : <XCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
+            }
+            <div>
+              <p className={cn("font-medium", sheetsTest.ok ? "text-emerald-300" : "text-red-300")}>
+                Conexión Google Sheets — {sheetsTest.ok ? "OK" : "Error"}
+              </p>
+              <p className="text-zinc-500 text-xs mt-0.5">
+                {sheetsTest.ok
+                  ? `${sheetsTest.rowCount ?? 0} fila${sheetsTest.rowCount !== 1 ? "s" : ""} encontradas en hoja Clientes`
+                  : sheetsTest.error ?? "No se pudo conectar"}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Section 2: Active integrations */}
+      <div>
+        <h2 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          Integraciones activas
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {INTEGRATIONS.map((intg) => {
+            const Icon = intg.icon;
+            return (
+              <div key={intg.name} className="glass-card border border-white/7 p-4 flex items-center gap-4 glass-card-hover">
+                <div className={cn("p-2.5 rounded-xl shrink-0", intg.bg)}>
+                  <Icon size={18} className={intg.color} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-zinc-200 font-semibold text-sm">{intg.name}</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">{intg.description}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Section 3: Costs */}
+      <div className="glass-card border border-white/7 p-6">
+        <h3 className="text-zinc-100 font-semibold text-sm mb-4">Costos del sistema</h3>
+        <div className="space-y-3">
+          {[
+            { name: "Base44", desc: "Plataforma de citas y perfiles capilares", cost: "Ver plan activo" },
+            { name: "Stripe", desc: "Procesamiento de pagos y anticipos", cost: "2.9% + $3 MXN por transacción" },
+            { name: "Google Workspace", desc: "Sheets como CRM de leads y conversaciones", cost: "Incluido en plan" },
+            { name: "Green API", desc: "WhatsApp Business número 4432", cost: "Ver desglose en configuración" },
+          ].map((item) => (
+            <div key={item.name} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+              <div>
+                <p className="text-zinc-300 font-medium text-sm">{item.name}</p>
+                <p className="text-zinc-500 text-xs mt-0.5">{item.desc}</p>
+              </div>
+              <p className="text-zinc-400 text-sm font-medium text-right">{item.cost}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

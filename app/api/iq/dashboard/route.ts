@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import type { IQDashboardData } from "@/lib/iq-types";
 
-const BASE44_BASE =
-  "https://cavaliss-spa-capilar.base44.app/api/apps/69bcfa4ccfa83545153ba491";
-const BASE44_TOKEN = "71cf179e00514bbda1ab089a5729c4b9";
 
 function parseItems(json: unknown): Record<string, unknown>[] {
   if (Array.isArray(json)) return json as Record<string, unknown>[];
@@ -23,8 +20,8 @@ export async function GET() {
   };
 
   try {
-    const res = await fetch(`${BASE44_BASE}/entities/PerfilCapilarV2`, {
-      headers: { Authorization: `Bearer ${BASE44_TOKEN}` },
+    const res = await fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2`, {
+      headers: { api_key: process.env.BASE44_API_KEY! },
       next: { revalidate: 120 },
     });
 

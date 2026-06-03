@@ -88,7 +88,12 @@ export default function InicioPage() {
         </div>
         <div className="space-y-4">
           <ErrorBoundary label="Health Score">
-            <HealthScore />
+            <HealthScore
+              occupancy={Math.min(100, (kpis.citasHoy / 10) * 100)}
+              conversion={kpis.tasaConversion}
+              retention={75}
+              revenueVsTarget={kpis.ingresosDia > 0 ? 100 : 0}
+            />
           </ErrorBoundary>
         </div>
       </div>
