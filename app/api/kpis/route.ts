@@ -56,7 +56,7 @@ export async function GET() {
     console.error("[kpis/stripe]", e);
   }
 
-  // 3. Leads — Google Sheets
+  // 3. Leads — Google Sheets (TODO: migrar a Base44 getLeadsForDashboard)
   try {
     const rows = await fetchSheet("Leads");
     result.totalLeads = rows.length;

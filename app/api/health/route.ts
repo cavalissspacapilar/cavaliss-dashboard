@@ -3,10 +3,11 @@ import { fetchSheet } from "@/lib/sheets";
 
 export async function GET() {
   const env = {
-    GOOGLE_SERVICE_ACCOUNT_KEY: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
-    GOOGLE_SHEETS_ID: !!process.env.GOOGLE_SHEETS_ID,
+    BASE44_FUNCTIONS_KEY: !!process.env.BASE44_FUNCTIONS_KEY,
     BASE44_API_KEY: !!process.env.BASE44_API_KEY,
     STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+    GOOGLE_SERVICE_ACCOUNT_KEY: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
+    GOOGLE_SHEETS_ID: !!process.env.GOOGLE_SHEETS_ID,
   };
 
   let sheetsTest: { ok: boolean; rowCount?: number; error?: string } | null = null;

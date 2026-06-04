@@ -2,26 +2,28 @@
 import { useState, useEffect } from "react";
 import {
   CheckCircle2, XCircle, RefreshCw, Database,
-  FileSpreadsheet, CreditCard, MessageSquare, Sparkles, Activity,
+  CreditCard, MessageSquare, Sparkles, Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HealthData {
   env: {
-    GOOGLE_SERVICE_ACCOUNT_KEY: boolean;
-    GOOGLE_SHEETS_ID: boolean;
+    BASE44_FUNCTIONS_KEY: boolean;
     BASE44_API_KEY: boolean;
     STRIPE_SECRET_KEY: boolean;
+    GOOGLE_SERVICE_ACCOUNT_KEY: boolean;
+    GOOGLE_SHEETS_ID: boolean;
   };
   sheetsTest: { ok: boolean; rowCount?: number; error?: string } | null;
 }
 
 const EMPTY_HEALTH: HealthData = {
   env: {
-    GOOGLE_SERVICE_ACCOUNT_KEY: false,
-    GOOGLE_SHEETS_ID: false,
+    BASE44_FUNCTIONS_KEY: false,
     BASE44_API_KEY: false,
     STRIPE_SECRET_KEY: false,
+    GOOGLE_SERVICE_ACCOUNT_KEY: false,
+    GOOGLE_SHEETS_ID: false,
   },
   sheetsTest: null,
 };
@@ -30,16 +32,9 @@ const INTEGRATIONS = [
   {
     icon: Database,
     name: "Base44",
-    description: "Citas y perfiles capilares",
+    description: "Citas, clientes, leads y métricas",
     color: "text-gold",
     bg: "bg-gold/10",
-  },
-  {
-    icon: FileSpreadsheet,
-    name: "Google Sheets",
-    description: "CRM, leads y conversaciones",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10",
   },
   {
     icon: CreditCard,
@@ -50,7 +45,7 @@ const INTEGRATIONS = [
   },
   {
     icon: MessageSquare,
-    name: "Green API",
+    name: "Green API WhatsApp",
     description: "WhatsApp Business (número 4432)",
     color: "text-green-400",
     bg: "bg-green-500/10",
@@ -116,12 +111,11 @@ export default function SistemaPage() {
 
   const { env, sheetsTest } = health;
   const connectedCount = [
+    env.BASE44_FUNCTIONS_KEY,
     env.BASE44_API_KEY,
-    env.GOOGLE_SERVICE_ACCOUNT_KEY && env.GOOGLE_SHEETS_ID,
     env.STRIPE_SECRET_KEY,
-    sheetsTest?.ok,
   ].filter(Boolean).length;
-  const totalChecks = 4;
+  const totalChecks = 3;
   const allOk = connectedCount === totalChecks;
 
   return (
@@ -131,7 +125,7 @@ export default function SistemaPage() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Estado del Sistema</h1>
           <p className="text-zinc-500 text-sm mt-0.5">
-            Centro de control Cavaliss · Base44 · Stripe · Google Sheets · Green API
+            Centro de control Cavaliss · Base44 · Stripe · Green API · Cavaliss IQ
           </p>
         </div>
         <button
@@ -174,7 +168,7 @@ export default function SistemaPage() {
           {!loading && (
             <p className="text-zinc-500 text-xs mt-0.5">
               {allOk
-                ? "Base44, Google Sheets y Stripe están respondiendo correctamente"
+                ? "Base44, Stripe y las integraciones están respondiendo correctamente"
                 : "Revisa las variables de entorno faltantes en Vercel o .env.local"}
             </p>
           )}
@@ -188,19 +182,14 @@ export default function SistemaPage() {
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ConnectionCard
+            label="Base44 — Functions Key"
+            connected={env.BASE44_FUNCTIONS_KEY}
+            detail="Clientes, leads y métricas vía REST functions"
+          />
+          <ConnectionCard
             label="Base44 — API Key"
             connected={env.BASE44_API_KEY}
             detail="Citas, perfiles capilares e historial IQ"
-          />
-          <ConnectionCard
-            label="Google Service Account"
-            connected={env.GOOGLE_SERVICE_ACCOUNT_KEY}
-            detail="Credenciales para leer y escribir en Sheets"
-          />
-          <ConnectionCard
-            label="Google Sheets ID"
-            connected={env.GOOGLE_SHEETS_ID}
-            detail="Hoja de cálculo con Clientes, Leads y Conversaciones"
           />
           <ConnectionCard
             label="Stripe — Secret Key"
@@ -208,29 +197,6 @@ export default function SistemaPage() {
             detail="Lectura de payment_intents para ingresos"
           />
         </div>
-
-        {/* Sheets test result */}
-        {!loading && sheetsTest !== null && (
-          <div className={cn(
-            "mt-3 p-4 rounded-xl border text-sm flex items-start gap-3",
-            sheetsTest.ok ? "border-emerald-500/15 bg-emerald-500/5" : "border-red-500/15 bg-red-500/5"
-          )}>
-            {sheetsTest.ok
-              ? <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-              : <XCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
-            }
-            <div>
-              <p className={cn("font-medium", sheetsTest.ok ? "text-emerald-300" : "text-red-300")}>
-                Conexión Google Sheets — {sheetsTest.ok ? "OK" : "Error"}
-              </p>
-              <p className="text-zinc-500 text-xs mt-0.5">
-                {sheetsTest.ok
-                  ? `${sheetsTest.rowCount ?? 0} fila${sheetsTest.rowCount !== 1 ? "s" : ""} encontradas en hoja Clientes`
-                  : sheetsTest.error ?? "No se pudo conectar"}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Section 2: Active integrations */}
@@ -261,10 +227,10 @@ export default function SistemaPage() {
         <h3 className="text-zinc-100 font-semibold text-sm mb-4">Costos del sistema</h3>
         <div className="space-y-3">
           {[
-            { name: "Base44", desc: "Plataforma de citas y perfiles capilares", cost: "Ver plan activo" },
+            { name: "Base44", desc: "Plataforma de citas, clientes, leads y métricas", cost: "Ver plan activo" },
             { name: "Stripe", desc: "Procesamiento de pagos y anticipos", cost: "2.9% + $3 MXN por transacción" },
-            { name: "Google Workspace", desc: "Sheets como CRM de leads y conversaciones", cost: "Incluido en plan" },
-            { name: "Green API", desc: "WhatsApp Business número 4432", cost: "Ver desglose en configuración" },
+            { name: "Green API WhatsApp", desc: "WhatsApp Business número 4432", cost: "Ver desglose en configuración" },
+            { name: "Cavaliss IQ", desc: "Inteligencia capilar y análisis de perfiles", cost: "Incluido en Base44" },
           ].map((item) => (
             <div key={item.name} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
               <div>

@@ -1,3 +1,4 @@
+// TODO: migrar a Base44 — único uso restante es app/api/kpis/route.ts y app/api/health/route.ts
 import { google } from "googleapis";
 
 export type SheetRow = Record<string, string>;
