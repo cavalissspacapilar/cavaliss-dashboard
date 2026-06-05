@@ -79,7 +79,7 @@ export default function ClientesPage() {
             <EmptyState
               icon={Users}
               title="Sin clientas registradas"
-              description="Los datos de clientes se cargan desde la hoja 'Clientes' de Google Sheets."
+              description="Los datos de clientes se cargan desde Base44."
             />
           </div>
         ) : (

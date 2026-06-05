@@ -258,7 +258,7 @@ export default function CavaPage() {
             <EmptyState
               icon={MessageSquare}
               title="Sin conversaciones registradas"
-              description="Las conversaciones se cargan desde la hoja 'Conversaciones' de Google Sheets."
+              description="Las conversaciones se registrarán en Base44 cuando esté activo el módulo WhatsApp."
             />
           </div>
         ) : (

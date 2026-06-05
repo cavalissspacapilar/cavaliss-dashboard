@@ -763,7 +763,7 @@ export default function LeadsPage() {
       <ErrorBoundary label="Pipeline kanban">
         {!loading && leads.length === 0 ? (
           <div className="glass-card border border-white/7 p-10">
-            <EmptyState icon={Target} title="Sin leads registrados" description="Los leads se cargan desde la hoja 'Leads' de Google Sheets." />
+            <EmptyState icon={Target} title="Sin leads registrados" description="Los leads se cargan desde Base44." />
           </div>
         ) : (
           <div className="flex gap-0">

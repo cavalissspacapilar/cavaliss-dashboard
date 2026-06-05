@@ -5,10 +5,11 @@ import { cn } from "@/lib/utils";
 
 interface HealthData {
   env: {
-    GOOGLE_SERVICE_ACCOUNT_KEY: boolean;
-    GOOGLE_SHEETS_ID: boolean;
+    BASE44_FUNCTIONS_KEY: boolean;
     BASE44_API_KEY: boolean;
     STRIPE_SECRET_KEY: boolean;
+    GOOGLE_SERVICE_ACCOUNT_KEY: boolean;
+    GOOGLE_SHEETS_ID: boolean;
   };
   sheetsTest: { ok: boolean; rowCount?: number; error?: string } | null;
 }
@@ -52,11 +53,9 @@ export default function AlertsPanel() {
   }, []);
 
   const allOk = health
-    ? health.env.BASE44_API_KEY &&
-      health.env.STRIPE_SECRET_KEY &&
-      health.env.GOOGLE_SERVICE_ACCOUNT_KEY &&
-      health.env.GOOGLE_SHEETS_ID &&
-      health.sheetsTest?.ok === true
+    ? health.env.BASE44_FUNCTIONS_KEY &&
+      health.env.BASE44_API_KEY &&
+      health.env.STRIPE_SECRET_KEY
     : null;
 
   const systemAlert = health
@@ -65,7 +64,7 @@ export default function AlertsPanel() {
           id: "system-ok",
           level: "success" as const,
           title: "Sistema operando correctamente",
-          desc: "Base44, Google Sheets y Stripe están configurados y respondiendo.",
+          desc: "Base44 y Stripe están configurados y respondiendo.",
           icon: CheckCircle2,
         }
       : {
@@ -123,11 +122,10 @@ export default function AlertsPanel() {
 
 function buildMissingDesc(health: HealthData): string {
   const missing: string[] = [];
-  if (!health.env.BASE44_API_KEY) missing.push("Base44");
-  if (!health.env.GOOGLE_SERVICE_ACCOUNT_KEY || !health.env.GOOGLE_SHEETS_ID) missing.push("Google Sheets");
-  if (!health.env.STRIPE_SECRET_KEY) missing.push("Stripe");
-  if (health.sheetsTest && !health.sheetsTest.ok) missing.push("conexión Sheets");
+  if (!health.env.BASE44_FUNCTIONS_KEY) missing.push("BASE44_FUNCTIONS_KEY");
+  if (!health.env.BASE44_API_KEY) missing.push("BASE44_API_KEY");
+  if (!health.env.STRIPE_SECRET_KEY) missing.push("STRIPE_SECRET_KEY");
   return missing.length > 0
-    ? `Variables faltantes o con error: ${missing.join(", ")}. Configura en Vercel o .env.local.`
+    ? `Variables faltantes: ${missing.join(", ")}. Configura en Vercel o .env.local.`
     : "Revisa /sistema para más detalles.";
 }
