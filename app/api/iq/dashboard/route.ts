@@ -46,7 +46,7 @@ export async function GET() {
 
       result.mejorando = items.filter((i) => {
         const r = String(i.riesgo_abandono ?? "").toLowerCase();
-        return r === "bajo";
+        return r === "bajo" || r === "ninguno" || r === "";
       }).length;
 
       result.en_riesgo = items.filter((i) => {

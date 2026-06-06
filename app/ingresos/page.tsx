@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
-import { DollarSign, TrendingUp, AlertCircle, Calendar } from "lucide-react";
+import { DollarSign, TrendingUp, AlertCircle, Calendar, CreditCard, Receipt } from "lucide-react";
 import { MONTHLY_SUMMARY } from "@/lib/data";
 import { fetchIngresos } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import EmptyState from "@/components/EmptyState";
+import type { PaymentRow } from "@/app/api/ingresos/route";
 
 const SERVICE_COLORS = ["#D4A017", "#A855F7", "#F43F5E", "#3B82F6", "#14B8A6", "#8B5CF6", "#F97316", "#10B981", "#0EA5E9"];
 
@@ -20,12 +21,25 @@ function CustomBarTooltip({ active, payload, label }: { active?: boolean; payloa
   );
 }
 
+const TYPE_LABEL: Record<PaymentRow["type"], string> = {
+  deposito: "Depósito",
+  pago_completo: "Pago completo",
+  pago: "Pago",
+};
+
+const TYPE_COLOR: Record<PaymentRow["type"], string> = {
+  deposito: "text-amber-400 bg-amber-500/10",
+  pago_completo: "text-emerald-400 bg-emerald-500/10",
+  pago: "text-blue-400 bg-blue-500/10",
+};
+
 export default function IngresosPage() {
   const [summary, setSummary] = useState(MONTHLY_SUMMARY);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
 
   useEffect(() => {
     fetchIngresos()
-      .then(d => setSummary(d.summary))
+      .then(d => { setSummary(d.summary); setPayments(d.payments ?? []); })
       .catch(console.error);
   }, []);
 
@@ -166,6 +180,56 @@ export default function IngresosPage() {
           </div>
         </ErrorBoundary>
       )}
+
+      {/* Tabla de pagos individuales */}
+      <ErrorBoundary label="Tabla de pagos">
+        <div className="glass-card border border-white/7 p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <Receipt size={16} className="text-gold" />
+            <h3 className="text-zinc-100 font-semibold text-sm">Pagos recientes (últimos 30 días)</h3>
+            {payments.length > 0 && (
+              <span className="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-lg ml-auto">
+                {payments.length} {payments.length === 1 ? "transacción" : "transacciones"}
+              </span>
+            )}
+          </div>
+          {payments.length === 0 ? (
+            <EmptyState
+              icon={CreditCard}
+              title="Sin pagos registrados"
+              description="Los pagos de Stripe aparecerán aquí cuando existan payment_intents con status succeeded."
+              className="py-6"
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/8 text-left">
+                    <th className="text-zinc-500 font-medium text-xs pb-3 pr-4">Fecha</th>
+                    <th className="text-zinc-500 font-medium text-xs pb-3 pr-4">Descripción</th>
+                    <th className="text-zinc-500 font-medium text-xs pb-3 pr-4">Tipo</th>
+                    <th className="text-zinc-500 font-medium text-xs pb-3 text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {payments.map(p => (
+                    <tr key={p.id} className="hover:bg-white/2 transition-colors">
+                      <td className="py-3 pr-4 text-zinc-400 text-xs whitespace-nowrap">{p.date}</td>
+                      <td className="py-3 pr-4 text-zinc-300 text-xs max-w-[220px] truncate">{p.description}</td>
+                      <td className="py-3 pr-4">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLOR[p.type]}`}>
+                          {TYPE_LABEL[p.type]}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right font-bold text-gold text-sm">{formatCurrency(p.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </ErrorBoundary>
 
       <ErrorBoundary label="Comparativa mensual">
         <div className="glass-card border border-white/7 p-6">

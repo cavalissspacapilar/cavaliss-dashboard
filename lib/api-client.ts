@@ -1,6 +1,7 @@
 import type { Appointment, Client, Lead, CavaConversation, RevenueDataPoint } from "./types";
 import type { MONTHLY_SUMMARY } from "./data";
 import type { KPIData } from "@/app/api/kpis/route";
+import type { PaymentRow } from "@/app/api/ingresos/route";
 
 type MonthlySummary = typeof MONTHLY_SUMMARY;
 
@@ -15,5 +16,5 @@ export const fetchClientes = () => apiFetch<Client[]>("/api/clientes");
 export const fetchLeads = () => apiFetch<Lead[]>("/api/leads");
 export const fetchConversaciones = () => apiFetch<CavaConversation[]>("/api/conversaciones");
 export const fetchIngresos = () =>
-  apiFetch<{ revenueData: RevenueDataPoint[]; summary: MonthlySummary }>("/api/ingresos");
+  apiFetch<{ revenueData: RevenueDataPoint[]; payments: PaymentRow[]; summary: MonthlySummary }>("/api/ingresos");
 export const fetchKPIs = () => apiFetch<KPIData>("/api/kpis");

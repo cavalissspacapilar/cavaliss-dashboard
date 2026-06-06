@@ -73,6 +73,15 @@ export default function ClientesPage() {
         </div>
       </ErrorBoundary>
 
+      {clients.length > 0 && (
+        <div className="flex items-start gap-2 px-1 -mt-2">
+          <AlertCircle size={13} className="text-zinc-600 mt-0.5 shrink-0" />
+          <p className="text-zinc-600 text-xs">
+            El gasto total se actualiza automáticamente con cada cita completada en Base44.
+          </p>
+        </div>
+      )}
+
       <ErrorBoundary label="Tabla de clientas">
         {!loading && clients.length === 0 ? (
           <div className="glass-card border border-white/7 p-6">

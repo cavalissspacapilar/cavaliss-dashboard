@@ -1,5 +1,5 @@
 // Static reference data only — NO fake client/lead/appointment/revenue data.
-// All live data comes from Base44, Google Sheets, and Stripe via API routes.
+// All live data comes from Base44 and Stripe via API routes.
 import type { ServiceData, RevenueDataPoint, CavaConversation } from "./types";
 
 // Service catalog — used for color/price/duration lookups in UI components.

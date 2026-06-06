@@ -11,6 +11,14 @@ interface PaymentIntent {
   metadata?: Record<string, string>;
 }
 
+export interface PaymentRow {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  type: "deposito" | "pago_completo" | "pago";
+}
+
 interface StripeList {
   data: PaymentIntent[];
   has_more: boolean;
@@ -34,6 +42,7 @@ async function fetchPaymentIntents(createdGte: number): Promise<PaymentIntent[]>
 export async function GET() {
   const emptyResponse = {
     revenueData: [] as RevenueDataPoint[],
+    payments: [] as PaymentRow[],
     summary: {
       currentMonth: 0,
       previousMonth: 0,
@@ -113,8 +122,25 @@ export async function GET() {
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 9);
 
+    // Individual payments table
+    const payments: PaymentRow[] = currentPIs.map(pi => {
+      const metaType = pi.metadata?.type ?? "";
+      const type: PaymentRow["type"] =
+        metaType === "deposito" ? "deposito"
+        : metaType === "pago_completo" ? "pago_completo"
+        : "pago";
+      return {
+        id: pi.id,
+        date: toDateStr(pi.created),
+        amount: pi.amount / 100,
+        description: pi.description ?? pi.metadata?.service ?? "Pago Stripe",
+        type,
+      };
+    }).sort((a, b) => b.date.localeCompare(a.date));
+
     return NextResponse.json({
       revenueData: points,
+      payments,
       summary: { currentMonth, previousMonth, target: 0, weeklyData, byService, pendingDeposits: [] },
     }, { headers: { "X-Data-Source": "stripe" } });
   } catch (err) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchSheet } from "@/lib/sheets";
+import { fetchBase44Function } from "@/lib/base44-client";
 
 export interface KPIData {
   citasHoy: number;
@@ -16,7 +16,7 @@ export async function GET() {
   const result = { ...EMPTY };
   const today = new Date().toISOString().split("T")[0];
 
-  // 1. Citas confirmadas hoy — Base44
+  // 1. Citas confirmadas hoy — Base44 Appointment
   try {
     const res = await fetch(`${process.env.BASE44_API_URL}/Appointment`, {
       headers: { api_key: process.env.BASE44_API_KEY! },
@@ -56,19 +56,23 @@ export async function GET() {
     console.error("[kpis/stripe]", e);
   }
 
-  // 3. Leads — Google Sheets (TODO: migrar a Base44 getLeadsForDashboard)
+  // 3. Leads — Base44 getLeadsForDashboard
   try {
-    const rows = await fetchSheet("Leads");
-    result.totalLeads = rows.length;
+    const data = await fetchBase44Function('getLeadsForDashboard');
+    const leads: Record<string, unknown>[] = data.leads ?? [];
 
-    const activeStatuses = ["nuevo", "en conversaci", "caliente", "reserva", "lista", "listo"];
-    result.leadsActivos = rows.filter(r =>
-      activeStatuses.some(s => (r.estado ?? "").toLowerCase().includes(s))
-    ).length;
+    result.totalLeads = leads.length;
 
-    result.convertidos = rows.filter(r =>
-      (r.estado ?? "").toLowerCase().includes("convert")
-    ).length;
+    const activeStatuses = ["contactado", "en_seguimiento", "agendado", "interesado", "nuevo"];
+    result.leadsActivos = leads.filter(l => {
+      const s = String(l.conversion_status ?? "").toLowerCase();
+      return activeStatuses.some(a => s.includes(a)) || s === "";
+    }).length;
+
+    result.convertidos = leads.filter(l => {
+      const s = String(l.conversion_status ?? "").toLowerCase();
+      return s.includes("convert") || s.includes("cliente") || s.includes("cerrado");
+    }).length;
 
     result.tasaConversion = result.totalLeads > 0
       ? Math.round((result.convertidos / result.totalLeads) * 100)

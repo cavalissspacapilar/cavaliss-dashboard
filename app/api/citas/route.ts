@@ -26,11 +26,12 @@ function normalizeService(s: string): ServiceName {
 function transform(item: Record<string, unknown>, idx: number): Appointment {
   const date = String(item.date ?? item.fecha ?? item.Date ?? item.appointment_date ?? new Date().toISOString().split("T")[0]);
   const time = String(item.time ?? item.hora ?? item.Time ?? item.start_time ?? "09:00").slice(0, 5);
-  const service = String(item.service ?? item.servicio ?? item.Service ?? item.treatment ?? "Diagnóstico Capilar");
-  const client = String(item.clientName ?? item.client_name ?? item.cliente ?? item.name ?? item.Name ?? "Clienta");
+  const service = String(item.service_name ?? item.service ?? item.servicio ?? item.Service ?? item.treatment ?? "Diagnóstico Capilar");
+  const client = String(item.client_name ?? item.clientName ?? item.cliente ?? item.name ?? item.Name ?? "Clienta");
   const status = String(item.status ?? item.estado ?? item.Status ?? "pendiente");
   const price = Number(item.price ?? item.precio ?? item.amount ?? item.Price ?? 0);
-  const deposit = Number(item.depositAmount ?? item.anticipo ?? item.deposit ?? 0);
+
+  const deposit = Number(item.deposit_amount ?? item.depositAmount ?? item.anticipo ?? item.deposit ?? 0);
 
   return {
     id: Number(item._id ?? item.id ?? idx + 1),
