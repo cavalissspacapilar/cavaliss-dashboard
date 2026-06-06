@@ -1,52 +1,52 @@
 import { NextResponse } from "next/server";
+import { fetchBase44Function } from "@/lib/base44-client";
 import type { IQClienteSummary } from "@/lib/iq-types";
 
-
-function parseItems(json: unknown): Record<string, unknown>[] {
-  if (Array.isArray(json)) return json as Record<string, unknown>[];
-  const j = json as Record<string, unknown> | null;
-  if (j && Array.isArray(j.data)) return j.data as Record<string, unknown>[];
-  if (j && Array.isArray(j.items)) return j.items as Record<string, unknown>[];
-  return [];
+// null → 5 (neutral midpoint on 0-10 scale)
+function n10(v: unknown): number {
+  const n = Number(v ?? null);
+  return isNaN(n) || v === null || v === undefined ? 5 : n;
 }
 
 export async function GET() {
-  const result: IQClienteSummary[] = [];
-
   try {
-    const res = await fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2`, {
-      headers: { api_key: process.env.BASE44_API_KEY! },
-      next: { revalidate: 120 },
-    });
+    const data = await fetchBase44Function('getIQProfiles');
+    const profiles: Record<string, unknown>[] = data.profiles ?? [];
 
-    if (res.ok) {
-      const json: unknown = await res.json();
-      const items = parseItems(json);
+    const clientes: IQClienteSummary[] = profiles.map(p => ({
+      id: String(p.id ?? ""),
+      client_profile_id: String(p.client_profile_id ?? p.id ?? ""),
+      nombre: String(p.nombre ?? p.name ?? "Sin nombre"),
+      telefono: String(p.telefono ?? ""),
+      score_general_capilar: Number(p.score_general_capilar ?? 0),
+      riesgo_abandono: String(p.riesgo_abandono ?? ""),
+      objetivo_capilar: String(p.objetivo_capilar ?? ""),
+      tendencia: String(p.tendencia ?? ""),
+      fecha_ultimo_diagnostico: String(p.fecha_ultimo_diagnostico ?? ""),
+      nivel_daño_actual: n10(p.nivel_daño_actual),
+      hidratacion_actual: n10(p.hidratacion_actual),
+      frizz_actual: n10(p.frizz_actual),
+      rotura_actual: n10(p.rotura_actual),
+      caida_actual: n10(p.caida_actual),
+      brillo_actual: n10(p.brillo_actual),
+      elasticidad_actual: n10(p.elasticidad_actual),
+      problema_alopecia: p.problema_alopecia === true,
+      problema_dermatitis: p.problema_dermatitis === true,
+      problema_caspa: p.problema_caspa === true,
+      problema_seborrea: p.problema_seborrea === true,
+      sesiones_recomendadas: String(p.sesiones_recomendadas ?? ""),
+      procedimiento_a_realizar: String(p.procedimiento_a_realizar ?? ""),
+      visit_count: Number(p.visit_count ?? 0),
+      total_spent: Number(p.total_spent ?? 0),
+      loyalty_tier: String(p.loyalty_tier ?? ""),
+    }));
 
-      const clientes: IQClienteSummary[] = items.map((i) => ({
-        id: String(i.id ?? i._id ?? ""),
-        client_profile_id: String(i.client_profile_id ?? ""),
-        nombre: String(
-          i.nombre ??
-            i.name ??
-            i.client_name ??
-            i.client_profile_id ??
-            "Sin nombre"
-        ),
-        score_general_capilar: Number(i.score_general_capilar ?? 0),
-        riesgo_abandono: String(i.riesgo_abandono ?? ""),
-        objetivo_capilar: String(i.objetivo_capilar ?? ""),
-        tendencia: String(i.tendencia ?? ""),
-        fecha_ultimo_diagnostico: String(i.fecha_ultimo_diagnostico ?? ""),
-      }));
+    // Worst scores first (needs most attention)
+    clientes.sort((a, b) => a.score_general_capilar - b.score_general_capilar);
 
-      // Ordered by score ascending (worst first)
-      clientes.sort((a, b) => a.score_general_capilar - b.score_general_capilar);
-      result.push(...clientes);
-    }
+    return NextResponse.json(clientes);
   } catch (e) {
     console.error("[iq/clientes]", e);
+    return NextResponse.json([]);
   }
-
-  return NextResponse.json(result);
 }

@@ -164,25 +164,18 @@ function IQKPICard({ label, value, icon, variant, decimals = 0 }: KPICardProps) 
 }
 
 // ─── RadarChart component ─────────────────────────────────────────────────────
+// Values are 0-10. Damage/Frizz/Rotura/Caída are inverted (lower raw = better).
 function HairRadarChart({ perfil }: { perfil: PerfilCapilarV2 }) {
+  const inv = (v: number) => Math.max(0, 10 - v);
   const data = [
-    { metric: "Daño",        value: perfil.score_dano,         fullMark: 100 },
-    { metric: "Hidratación", value: perfil.score_hidratacion,  fullMark: 100 },
-    { metric: "Frizz",       value: perfil.score_frizz,        fullMark: 100 },
-    { metric: "Rotura",      value: perfil.score_rotura,       fullMark: 100 },
-    { metric: "Caída",       value: perfil.score_caida,        fullMark: 100 },
-    { metric: "Brillo",      value: perfil.score_brillo,       fullMark: 100 },
-    { metric: "Elasticidad", value: perfil.score_elasticidad,  fullMark: 100 },
+    { metric: "Daño",        value: inv(perfil.nivel_daño_actual),  fullMark: 10 },
+    { metric: "Hidratación", value: perfil.hidratacion_actual,       fullMark: 10 },
+    { metric: "Frizz",       value: inv(perfil.frizz_actual),        fullMark: 10 },
+    { metric: "Rotura",      value: inv(perfil.rotura_actual),       fullMark: 10 },
+    { metric: "Caída",       value: inv(perfil.caida_actual),        fullMark: 10 },
+    { metric: "Brillo",      value: perfil.brillo_actual,            fullMark: 10 },
+    { metric: "Elasticidad", value: perfil.elasticidad_actual,       fullMark: 10 },
   ];
-
-  const hasData = data.some((d) => d.value > 0);
-  if (!hasData) {
-    return (
-      <div className="flex items-center justify-center h-48 text-zinc-600 text-sm">
-        Sin datos de scores individuales
-      </div>
-    );
-  }
 
   return (
     <ResponsiveContainer width="100%" height={240}>
@@ -194,7 +187,7 @@ function HairRadarChart({ perfil }: { perfil: PerfilCapilarV2 }) {
         />
         <PolarRadiusAxis
           angle={30}
-          domain={[0, 100]}
+          domain={[0, 10]}
           tick={{ fill: "#71717a", fontSize: 8 }}
           axisLine={false}
           tickCount={4}
@@ -214,13 +207,33 @@ function HairRadarChart({ perfil }: { perfil: PerfilCapilarV2 }) {
             return (
               <div className="glass-card border border-gold/20 px-3 py-2 text-xs">
                 <p className="text-zinc-300 font-medium">{item.name}</p>
-                <p className="text-gold font-bold">{String(item.value)}</p>
+                <p className="text-gold font-bold">{String(item.value)}/10</p>
               </div>
             );
           }}
         />
       </RadarChart>
     </ResponsiveContainer>
+  );
+}
+
+// ─── ProblemBadges ────────────────────────────────────────────────────────────
+function ProblemBadges({ c }: { c: IQClienteSummary }) {
+  const problems = [
+    { key: "alopecia",   label: "Alopecia",   active: c.problema_alopecia },
+    { key: "dermatitis", label: "Dermatitis", active: c.problema_dermatitis },
+    { key: "caspa",      label: "Caspa",      active: c.problema_caspa },
+  ].filter(p => p.active);
+
+  if (problems.length === 0) return <span className="text-zinc-700 text-xs">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {problems.map(p => (
+        <span key={p.key} className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/12 text-red-400 border border-red-500/20 font-medium">
+          {p.label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -320,7 +333,7 @@ function IQPanelInner({ clientProfileId, onClose }: IQPanelProps) {
               </div>
             </section>
 
-            {/* Objetivo + datos */}
+            {/* Objetivo + procedimiento */}
             {perfil.objetivo_capilar && (
               <section>
                 <h3 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">
@@ -328,6 +341,43 @@ function IQPanelInner({ clientProfileId, onClose }: IQPanelProps) {
                 </h3>
                 <p className="text-zinc-300 text-sm leading-relaxed glass-card border border-white/7 px-4 py-3 rounded-xl">
                   {perfil.objetivo_capilar}
+                </p>
+              </section>
+            )}
+
+            {perfil.procedimiento_a_realizar && (
+              <section>
+                <h3 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                  Procedimiento
+                </h3>
+                <p className="text-zinc-300 text-sm leading-relaxed glass-card border border-white/7 px-4 py-3 rounded-xl">
+                  {perfil.procedimiento_a_realizar}
+                </p>
+              </section>
+            )}
+
+            {/* Problemas detectados */}
+            {(perfil.problema_alopecia || perfil.problema_dermatitis || perfil.problema_caspa || perfil.problema_seborrea) && (
+              <section>
+                <h3 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                  Problemas Detectados
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {perfil.problema_alopecia   && <span className="text-xs px-2.5 py-1 rounded-lg bg-red-500/12 text-red-400 border border-red-500/20 font-medium">Alopecia</span>}
+                  {perfil.problema_dermatitis && <span className="text-xs px-2.5 py-1 rounded-lg bg-red-500/12 text-red-400 border border-red-500/20 font-medium">Dermatitis</span>}
+                  {perfil.problema_caspa      && <span className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/12 text-amber-400 border border-amber-500/20 font-medium">Caspa</span>}
+                  {perfil.problema_seborrea   && <span className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/12 text-amber-400 border border-amber-500/20 font-medium">Seborrea</span>}
+                </div>
+              </section>
+            )}
+
+            {perfil.sesiones_recomendadas && (
+              <section>
+                <h3 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                  Sesiones Recomendadas
+                </h3>
+                <p className="text-zinc-300 text-sm glass-card border border-white/7 px-4 py-3 rounded-xl">
+                  {perfil.sesiones_recomendadas.replace(/_/g, " ")}
                 </p>
               </section>
             )}
@@ -534,7 +584,7 @@ export default function IQPage() {
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-white/5">
-                    {["Clienta", "Hair Score", "Riesgo", "Objetivo", "Último diagnóstico", ""].map(
+                    {["Clienta", "Hair Score", "Riesgo", "Problemas", "Sesiones", "Procedimiento", "Último diag.", ""].map(
                       (h) => (
                         <th
                           key={h}
@@ -550,6 +600,8 @@ export default function IQPage() {
                   {clientes.map((c) => {
                     const panelId = c.client_profile_id || c.id;
                     const isSelected = selectedId === panelId;
+                    const proc = c.procedimiento_a_realizar;
+                    const procShort = proc && proc.length > 30 ? proc.slice(0, 30) + "…" : proc;
                     return (
                       <tr
                         key={c.id}
@@ -563,13 +615,13 @@ export default function IQPage() {
                       >
                         {/* Clienta */}
                         <td className="py-3 px-3">
-                          <p className="text-zinc-200 font-medium truncate max-w-[140px]">
+                          <p className="text-zinc-200 font-medium truncate max-w-[130px]">
                             {c.nombre || c.client_profile_id || "—"}
                           </p>
                         </td>
 
                         {/* Hair Score */}
-                        <td className="py-3 px-3 w-36">
+                        <td className="py-3 px-3 w-32">
                           <HairScoreBar score={c.score_general_capilar} />
                         </td>
 
@@ -578,10 +630,24 @@ export default function IQPage() {
                           <RiskBadge riesgo={c.riesgo_abandono} />
                         </td>
 
-                        {/* Objetivo */}
-                        <td className="py-3 px-3 max-w-[160px]">
-                          <p className="text-zinc-400 text-xs truncate">
-                            {c.objetivo_capilar || "—"}
+                        {/* Problemas */}
+                        <td className="py-3 px-3">
+                          <ProblemBadges c={c} />
+                        </td>
+
+                        {/* Sesiones */}
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <p className="text-zinc-400 text-xs">
+                            {c.sesiones_recomendadas
+                              ? c.sesiones_recomendadas.replace(/_/g, " ")
+                              : "—"}
+                          </p>
+                        </td>
+
+                        {/* Procedimiento */}
+                        <td className="py-3 px-3 max-w-[180px]">
+                          <p className="text-zinc-400 text-xs truncate" title={proc || ""}>
+                            {procShort || "—"}
                           </p>
                         </td>
 
