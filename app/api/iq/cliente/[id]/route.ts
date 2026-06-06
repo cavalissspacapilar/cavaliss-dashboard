@@ -19,9 +19,6 @@ function parseItems(json: unknown): Record<string, unknown>[] {
   return [];
 }
 
-function buildQuery(clientProfileId: string) {
-  return encodeURIComponent(JSON.stringify({ client_profile_id: clientProfileId }));
-}
 
 function rawToPerfil(raw: Record<string, unknown>, nombre = ""): PerfilCapilarV2 {
   return {
@@ -80,10 +77,10 @@ export async function GET(
       ) ?? null;
     } catch {}
 
-    // Fallback: query PerfilCapilarV2 entity by client_profile_id
+    // Fallback: fetch all PerfilCapilarV2 and filter in JS (Base44 entity filter API unreliable)
     if (!raw) {
       const [perfilRes, clientsData] = await Promise.all([
-        fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2?filters=${buildQuery(id)}`, {
+        fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2`, {
           headers: { api_key: process.env.BASE44_API_KEY! },
           next: { revalidate: 60 },
         }),
@@ -98,7 +95,7 @@ export async function GET(
       if (perfilRes.ok) {
         const json: unknown = await perfilRes.json();
         const items = parseItems(json);
-        if (items.length > 0) raw = items[0];
+        raw = items.find(item => String(item.client_profile_id ?? "") === id) ?? null;
       }
     }
 
@@ -112,7 +109,7 @@ export async function GET(
   // ── 2. Fetch HistorialCapilarSnapshot ─────────────────────────────────────
   try {
     const res = await fetch(
-      `${process.env.BASE44_API_URL}/HistorialCapilarSnapshot?filters=${buildQuery(id)}`,
+      `${process.env.BASE44_API_URL}/HistorialCapilarSnapshot`,
       {
         headers: { api_key: process.env.BASE44_API_KEY! },
         next: { revalidate: 60 },
@@ -121,7 +118,8 @@ export async function GET(
 
     if (res.ok) {
       const json: unknown = await res.json();
-      const items = parseItems(json);
+      const allItems = parseItems(json);
+      const items = allItems.filter(i => String(i.client_profile_id ?? "") === id);
 
       const snapshots: HistorialCapilarSnapshot[] = items.map(i => ({
         id: String(i.id ?? i._id ?? ""),
