@@ -83,7 +83,7 @@ export async function GET(
     // Fallback: query PerfilCapilarV2 entity by client_profile_id
     if (!raw) {
       const [perfilRes, clientsData] = await Promise.all([
-        fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2?query=${buildQuery(id)}`, {
+        fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2?filters=${buildQuery(id)}`, {
           headers: { api_key: process.env.BASE44_API_KEY! },
           next: { revalidate: 60 },
         }),
@@ -112,7 +112,7 @@ export async function GET(
   // ── 2. Fetch HistorialCapilarSnapshot ─────────────────────────────────────
   try {
     const res = await fetch(
-      `${process.env.BASE44_API_URL}/HistorialCapilarSnapshot?query=${buildQuery(id)}`,
+      `${process.env.BASE44_API_URL}/HistorialCapilarSnapshot?filters=${buildQuery(id)}`,
       {
         headers: { api_key: process.env.BASE44_API_KEY! },
         next: { revalidate: 60 },
