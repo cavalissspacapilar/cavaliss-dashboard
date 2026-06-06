@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
-import { DollarSign, TrendingUp, AlertCircle, Calendar, CreditCard, Receipt } from "lucide-react";
+import { DollarSign, TrendingUp, AlertCircle, History, CreditCard, Receipt } from "lucide-react";
 import { MONTHLY_SUMMARY } from "@/lib/data";
 import { fetchIngresos } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
@@ -43,27 +43,26 @@ export default function IngresosPage() {
       .catch(console.error);
   }, []);
 
-  const { currentMonth, previousMonth, target, weeklyData, byService, pendingDeposits } = summary;
+  const { currentMonth, previousMonth, target, weeklyData, byService, pendingDeposits, totalHistorico, depositos, pagosCompletos } = summary;
   const growth = previousMonth > 0 ? Math.round(((currentMonth - previousMonth) / previousMonth) * 100) : 0;
   const targetPct = target > 0 ? Math.min(Math.round((currentMonth / target) * 100), 100) : 0;
-  const projectedEnd = currentMonth > 0 ? Math.round(currentMonth * 1.18) : 0;
 
   return (
     <div className="space-y-6 max-w-[1400px]">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">Ingresos y Finanzas</h1>
         <p className="text-zinc-500 text-sm mt-0.5">
-          {new Date().toLocaleDateString("es-MX", { month: "long", year: "numeric" })} · Cavaliss Spa Capilar
+          Últimos 30 días · Cavaliss Spa Capilar
         </p>
       </div>
 
       <ErrorBoundary label="KPIs de ingresos">
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: "Ingresos del mes", value: formatCurrency(currentMonth), sub: growth !== 0 ? `${growth > 0 ? "+" : ""}${growth}% vs mes anterior` : "Sin comparación", color: "text-gold", icon: DollarSign },
-            { label: "Meta del mes", value: target > 0 ? `${targetPct}%` : "Sin meta", sub: target > 0 ? `Meta: ${formatCurrency(target)}` : "Configura MONTHLY_TARGET", color: "text-emerald-400", icon: TrendingUp },
-            { label: "Mes anterior", value: formatCurrency(previousMonth), sub: "Período anterior", color: "text-blue-400", icon: Calendar },
-            { label: "Proyección fin de mes", value: projectedEnd > 0 ? formatCurrency(projectedEnd) : "$0", sub: projectedEnd > 0 ? "Basado en tendencia" : "Sin datos suficientes", color: "text-cavaliss-pink", icon: TrendingUp },
+            { label: "Ingresos últimos 30 días", value: formatCurrency(currentMonth), sub: growth !== 0 ? `${growth > 0 ? "+" : ""}${growth}% vs período anterior` : "Sin comparación", color: "text-gold", icon: DollarSign },
+            { label: "Total histórico", value: formatCurrency(totalHistorico), sub: "Suma de todos los pagos", color: "text-emerald-400", icon: History },
+            { label: "Depósitos", value: String(depositos), sub: "Últimos 30 días", color: "text-amber-400", icon: Receipt },
+            { label: "Pagos completos", value: String(pagosCompletos), sub: "Últimos 30 días", color: "text-blue-400", icon: CreditCard },
           ].map(k => (
             <div key={k.label} className="glass-card border border-white/7 p-5 glass-card-hover">
               <k.icon size={18} className={`${k.color} mb-3`} />
@@ -233,11 +232,11 @@ export default function IngresosPage() {
 
       <ErrorBoundary label="Comparativa mensual">
         <div className="glass-card border border-white/7 p-6">
-          <h3 className="text-zinc-100 font-semibold text-sm mb-5">Comparativa mes actual vs anterior</h3>
+          <h3 className="text-zinc-100 font-semibold text-sm mb-5">Comparativa últimos 30 días vs período anterior</h3>
           <div className="grid grid-cols-2 gap-6">
             {[
-              { label: "Mes actual", value: currentMonth, color: "#D4A017" },
-              { label: "Mes anterior", value: previousMonth, color: "#52525b" },
+              { label: "Últimos 30 días", value: currentMonth, color: "#D4A017" },
+              { label: "31–60 días atrás", value: previousMonth, color: "#52525b" },
             ].map(m => {
               const maxVal = Math.max(currentMonth, previousMonth, 1);
               return (

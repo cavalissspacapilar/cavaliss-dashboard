@@ -50,27 +50,25 @@ export async function GET() {
       weeklyData: [] as { week: string; amount: number }[],
       byService: [] as { name: string; amount: number; count: number }[],
       pendingDeposits: [] as { client: string; service: string; amount: number; date: string }[],
+      totalHistorico: 0,
+      depositos: 0,
+      pagosCompletos: 0,
     },
   };
 
   try {
     const now = new Date();
-    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const nowSec = Math.floor(now.getTime() / 1000);
+    const last30Start = nowSec - 30 * 24 * 60 * 60;
+    const last60Start = nowSec - 60 * 24 * 60 * 60;
 
-    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
-    const prevMonthStart = Math.floor(startOfPrevMonth.getTime() / 1000);
-    const currentMonthStart = Math.floor(startOfCurrentMonth.getTime() / 1000);
+    // Single fetch covers both 30-day windows
+    const allPIs = await fetchPaymentIntents(last60Start);
 
-    // Current month + 30-day window
-    const [currentPIs, prevPIs] = await Promise.all([
-      fetchPaymentIntents(Math.min(thirtyDaysAgo, currentMonthStart)),
-      fetchPaymentIntents(prevMonthStart).then(all =>
-        all.filter(pi => pi.created >= prevMonthStart && pi.created < currentMonthStart)
-      ),
-    ]);
+    const currentPIs = allPIs.filter(pi => pi.created >= last30Start);
+    const prevPIs    = allPIs.filter(pi => pi.created < last30Start);
 
-    // 30-day daily series
+    // 30-day daily series for chart
     const byDate: Record<string, number> = {};
     currentPIs.forEach(pi => {
       const d = toDateStr(pi.created);
@@ -84,56 +82,50 @@ export async function GET() {
       return { date: dateStr, amount: byDate[dateStr] ?? 0, appointments: 0 };
     });
 
-    // Monthly totals
-    const currentMonth = currentPIs
-      .filter(pi => pi.created >= currentMonthStart)
-      .reduce((s, pi) => s + pi.amount / 100, 0);
-
+    // Rolling window totals
+    const currentMonth  = currentPIs.reduce((s, pi) => s + pi.amount / 100, 0);
     const previousMonth = prevPIs.reduce((s, pi) => s + pi.amount / 100, 0);
+    const totalHistorico = allPIs.reduce((s, pi) => s + pi.amount / 100, 0);
 
-    // Weekly breakdown for current month
-    const weeks = ["Sem 1", "Sem 2", "Sem 3", "Sem 4"];
-    const weeklyData = weeks.map((week, wi) => {
-      const wStart = new Date(startOfCurrentMonth);
-      wStart.setDate(1 + wi * 7);
-      const wEnd = new Date(wStart);
-      wEnd.setDate(wStart.getDate() + 7);
+    // Type counts (last 30 days)
+    const depositos     = currentPIs.filter(pi => pi.metadata?.type === "deposito").length;
+    const pagosCompletos = currentPIs.filter(pi => pi.metadata?.type === "pago_completo").length;
+
+    // Weekly breakdown — 4 buckets of 7 days within last 30
+    const weeklyData = [0, 1, 2, 3].map(wi => {
+      const wStart = last30Start + wi * 7 * 24 * 60 * 60;
+      const wEnd   = wStart + 7 * 24 * 60 * 60;
       const amount = currentPIs
-        .filter(pi => {
-          const d = new Date(pi.created * 1000);
-          return d >= wStart && d < wEnd && pi.created >= currentMonthStart;
-        })
+        .filter(pi => pi.created >= wStart && pi.created < wEnd)
         .reduce((s, pi) => s + pi.amount / 100, 0);
-      return { week, amount };
+      return { week: `Sem ${wi + 1}`, amount };
     });
 
-    // Service breakdown from metadata/description
+    // Service breakdown from metadata/description (last 30 days)
     const byServiceMap: Record<string, { amount: number; count: number }> = {};
-    currentPIs
-      .filter(pi => pi.created >= currentMonthStart)
-      .forEach(pi => {
-        const svc = pi.metadata?.service ?? pi.description ?? "Sin categoría";
-        const existing = byServiceMap[svc] ?? { amount: 0, count: 0 };
-        byServiceMap[svc] = { amount: existing.amount + pi.amount / 100, count: existing.count + 1 };
-      });
+    currentPIs.forEach(pi => {
+      const svc = pi.metadata?.service ?? pi.description ?? "Sin categoría";
+      const ex = byServiceMap[svc] ?? { amount: 0, count: 0 };
+      byServiceMap[svc] = { amount: ex.amount + pi.amount / 100, count: ex.count + 1 };
+    });
 
     const byService = Object.entries(byServiceMap)
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 9);
 
-    // Individual payments table
+    // Individual payments table (last 30 days)
     const payments: PaymentRow[] = currentPIs.map(pi => {
       const metaType = pi.metadata?.type ?? "";
       const type: PaymentRow["type"] =
-        metaType === "deposito" ? "deposito"
+        metaType === "deposito"     ? "deposito"
         : metaType === "pago_completo" ? "pago_completo"
         : "pago";
       return {
         id: pi.id,
         date: toDateStr(pi.created),
         amount: pi.amount / 100,
-        description: pi.description ?? pi.metadata?.service ?? "Pago Stripe",
+        description: pi.description ?? pi.metadata?.service ?? pi.metadata?.description ?? "Anticipo de reserva",
         type,
       };
     }).sort((a, b) => b.date.localeCompare(a.date));
@@ -141,7 +133,17 @@ export async function GET() {
     return NextResponse.json({
       revenueData: points,
       payments,
-      summary: { currentMonth, previousMonth, target: 0, weeklyData, byService, pendingDeposits: [] },
+      summary: {
+        currentMonth,
+        previousMonth,
+        target: 0,
+        weeklyData,
+        byService,
+        pendingDeposits: [],
+        totalHistorico,
+        depositos,
+        pagosCompletos,
+      },
     }, { headers: { "X-Data-Source": "stripe" } });
   } catch (err) {
     console.error("[/api/ingresos]", err);

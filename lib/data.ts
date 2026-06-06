@@ -30,6 +30,9 @@ export const MONTHLY_SUMMARY = {
   weeklyData: [] as { week: string; amount: number }[],
   byService: [] as { name: string; amount: number; count: number }[],
   pendingDeposits: [] as { client: string; service: string; amount: number; date: string }[],
+  totalHistorico: 0,
+  depositos: 0,
+  pagosCompletos: 0,
 };
 
 export const TODAY_KPIS = {
