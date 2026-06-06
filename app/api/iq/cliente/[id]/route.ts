@@ -23,6 +23,42 @@ function buildQuery(clientProfileId: string) {
   return encodeURIComponent(JSON.stringify({ client_profile_id: clientProfileId }));
 }
 
+function rawToPerfil(raw: Record<string, unknown>, nombre = ""): PerfilCapilarV2 {
+  return {
+    id: String(raw.id ?? ""),
+    client_profile_id: String(raw.client_profile_id ?? raw.id ?? ""),
+    nombre: String(raw.nombre ?? raw.name ?? (nombre || "Sin nombre")),
+    score_general_capilar: Number(raw.score_general_capilar ?? 0),
+    riesgo_abandono: String(raw.riesgo_abandono ?? ""),
+    objetivo_capilar: String(raw.objetivo_capilar ?? ""),
+    tendencia: String(raw.tendencia ?? ""),
+    fecha_ultimo_diagnostico: String(raw.fecha_ultimo_diagnostico ?? ""),
+    datos_completos: Number(raw.score_general_capilar ?? 0) > 0,
+    nivel_daño_actual: n10(raw.nivel_daño_actual),
+    hidratacion_actual: n10(raw.hidratacion_actual),
+    frizz_actual: n10(raw.frizz_actual),
+    rotura_actual: n10(raw.rotura_actual),
+    caida_actual: n10(raw.caida_actual),
+    brillo_actual: n10(raw.brillo_actual),
+    elasticidad_actual: n10(raw.elasticidad_actual),
+    score_dano: Number(raw.score_dano ?? 0),
+    score_hidratacion: Number(raw.score_hidratacion ?? 0),
+    score_frizz: Number(raw.score_frizz ?? 0),
+    score_rotura: Number(raw.score_rotura ?? 0),
+    score_caida: Number(raw.score_caida ?? 0),
+    score_brillo: Number(raw.score_brillo ?? 0),
+    score_elasticidad: Number(raw.score_elasticidad ?? 0),
+    problema_alopecia: raw.problema_alopecia === true,
+    problema_dermatitis: raw.problema_dermatitis === true,
+    problema_caspa: raw.problema_caspa === true,
+    problema_seborrea: raw.problema_seborrea === true,
+    sesiones_recomendadas: String(raw.sesiones_recomendadas ?? ""),
+    procedimiento_a_realizar: String(raw.procedimiento_a_realizar ?? ""),
+    foto_antes_url: raw.foto_antes_url ? String(raw.foto_antes_url) : undefined,
+    foto_despues_url: raw.foto_despues_url ? String(raw.foto_despues_url) : undefined,
+  };
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -30,67 +66,50 @@ export async function GET(
   const { id } = await params;
   const result: IQClienteDetail = { perfil: null, snapshots: [] };
 
-  // ── 1. Fetch perfil via getIQProfiles (filter by id) ─────────────────────
+  // ── 1. Fetch perfil ───────────────────────────────────────────────────────
   try {
-    // Try getClientIQProfile first (single-client function)
     let raw: Record<string, unknown> | null = null;
-    try {
-      const single = await fetchBase44Function('getClientIQProfile');
-      // If the function exists but takes a body param, it may return all profiles
-      const profiles: Record<string, unknown>[] = single.profiles ?? (Array.isArray(single) ? single : []);
-      raw = profiles.find(p => String(p.id ?? "") === id || String(p.client_profile_id ?? "") === id) ?? null;
-    } catch {
-      // Fall back to filtering from getIQProfiles
-    }
+    let clientName = "";
 
-    if (!raw) {
+    // Try getIQProfiles function first
+    try {
       const data = await fetchBase44Function('getIQProfiles');
       const profiles: Record<string, unknown>[] = data.profiles ?? [];
-      raw = profiles.find(p => String(p.id ?? "") === id || String(p.client_profile_id ?? "") === id) ?? null;
+      raw = profiles.find(p =>
+        String(p.id ?? "") === id || String(p.client_profile_id ?? "") === id
+      ) ?? null;
+    } catch {}
+
+    // Fallback: query PerfilCapilarV2 entity by client_profile_id
+    if (!raw) {
+      const [perfilRes, clientsData] = await Promise.all([
+        fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2?query=${buildQuery(id)}`, {
+          headers: { api_key: process.env.BASE44_API_KEY! },
+          next: { revalidate: 60 },
+        }),
+        fetchBase44Function('getClientsForDashboard').catch(() => ({ clients: [] })),
+      ]);
+
+      // Get client name from clients list
+      const clients: Record<string, unknown>[] = clientsData.clients ?? [];
+      const client = clients.find(c => String(c.id ?? "") === id);
+      clientName = String(client?.name ?? "");
+
+      if (perfilRes.ok) {
+        const json: unknown = await perfilRes.json();
+        const items = parseItems(json);
+        if (items.length > 0) raw = items[0];
+      }
     }
 
     if (raw) {
-      const perfil: PerfilCapilarV2 = {
-        id: String(raw.id ?? ""),
-        client_profile_id: String(raw.client_profile_id ?? raw.id ?? ""),
-        nombre: String(raw.nombre ?? raw.name ?? "Sin nombre"),
-        score_general_capilar: Number(raw.score_general_capilar ?? 0),
-        riesgo_abandono: String(raw.riesgo_abandono ?? ""),
-        objetivo_capilar: String(raw.objetivo_capilar ?? ""),
-        tendencia: String(raw.tendencia ?? ""),
-        fecha_ultimo_diagnostico: String(raw.fecha_ultimo_diagnostico ?? ""),
-        datos_completos: Number(raw.score_general_capilar ?? 0) > 0,
-        nivel_daño_actual: n10(raw.nivel_daño_actual),
-        hidratacion_actual: n10(raw.hidratacion_actual),
-        frizz_actual: n10(raw.frizz_actual),
-        rotura_actual: n10(raw.rotura_actual),
-        caida_actual: n10(raw.caida_actual),
-        brillo_actual: n10(raw.brillo_actual),
-        elasticidad_actual: n10(raw.elasticidad_actual),
-        // Legacy score fields (kept for backward compat)
-        score_dano: Number(raw.score_dano ?? 0),
-        score_hidratacion: Number(raw.score_hidratacion ?? 0),
-        score_frizz: Number(raw.score_frizz ?? 0),
-        score_rotura: Number(raw.score_rotura ?? 0),
-        score_caida: Number(raw.score_caida ?? 0),
-        score_brillo: Number(raw.score_brillo ?? 0),
-        score_elasticidad: Number(raw.score_elasticidad ?? 0),
-        problema_alopecia: raw.problema_alopecia === true,
-        problema_dermatitis: raw.problema_dermatitis === true,
-        problema_caspa: raw.problema_caspa === true,
-        problema_seborrea: raw.problema_seborrea === true,
-        sesiones_recomendadas: String(raw.sesiones_recomendadas ?? ""),
-        procedimiento_a_realizar: String(raw.procedimiento_a_realizar ?? ""),
-        foto_antes_url: raw.foto_antes_url ? String(raw.foto_antes_url) : undefined,
-        foto_despues_url: raw.foto_despues_url ? String(raw.foto_despues_url) : undefined,
-      };
-      result.perfil = perfil;
+      result.perfil = rawToPerfil(raw, clientName);
     }
   } catch (e) {
     console.error("[iq/cliente/perfil]", e);
   }
 
-  // ── 2. Fetch HistorialCapilarSnapshot (entity endpoint) ──────────────────
+  // ── 2. Fetch HistorialCapilarSnapshot ─────────────────────────────────────
   try {
     const res = await fetch(
       `${process.env.BASE44_API_URL}/HistorialCapilarSnapshot?query=${buildQuery(id)}`,

@@ -12,14 +12,36 @@ export async function GET() {
   };
 
   try {
-    const data = await fetchBase44Function('getIQProfiles');
-    const profiles: Record<string, unknown>[] = data.profiles ?? [];
+    let profiles: Record<string, unknown>[] = [];
 
-    if (profiles.length === 0) return NextResponse.json(result);
+    // Try getIQProfiles function first
+    try {
+      const data = await fetchBase44Function('getIQProfiles');
+      if (data.profiles?.length > 0) {
+        profiles = data.profiles;
+      }
+    } catch {}
 
-    result.total_clientes = profiles.length;
+    // Fallback: read PerfilCapilarV2 entity directly
+    if (profiles.length === 0) {
+      const res = await fetch(`${process.env.BASE44_API_URL}/PerfilCapilarV2`, {
+        headers: { api_key: process.env.BASE44_API_KEY! },
+        next: { revalidate: 120 },
+      });
+      if (res.ok) {
+        const json: unknown = await res.json();
+        profiles = Array.isArray(json) ? json as Record<string, unknown>[] : [];
+      }
+    }
 
-    const scores = profiles
+    // Filter out orphaned records
+    const valid = profiles.filter(p => p.client_profile_id);
+
+    if (valid.length === 0) return NextResponse.json(result);
+
+    result.total_clientes = valid.length;
+
+    const scores = valid
       .map(p => Number(p.score_general_capilar ?? 0))
       .filter(s => s > 0);
 
@@ -28,17 +50,17 @@ export async function GET() {
         ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
         : 0;
 
-    result.mejorando = profiles.filter(p => {
+    result.mejorando = valid.filter(p => {
       const r = String(p.riesgo_abandono ?? "").toLowerCase();
       return r === "bajo" || r === "ninguno" || r === "";
     }).length;
 
-    result.en_riesgo = profiles.filter(p => {
+    result.en_riesgo = valid.filter(p => {
       const r = String(p.riesgo_abandono ?? "").toLowerCase();
       return r === "alto" || r === "critico" || r === "crítico";
     }).length;
 
-    result.datos_completos = profiles.filter(
+    result.datos_completos = valid.filter(
       p => Number(p.score_general_capilar ?? 0) > 0
     ).length;
   } catch (e) {
