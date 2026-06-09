@@ -53,6 +53,8 @@ function rawToPerfil(raw: Record<string, unknown>, nombre = ""): PerfilCapilarV2
     procedimiento_a_realizar: String(raw.procedimiento_a_realizar ?? ""),
     foto_antes_url: raw.foto_antes_url ? String(raw.foto_antes_url) : undefined,
     foto_despues_url: raw.foto_despues_url ? String(raw.foto_despues_url) : undefined,
+    firma_cliente_timestamp: raw.firma_cliente_timestamp ? String(raw.firma_cliente_timestamp) : undefined,
+    firma_especialista_nombre: raw.firma_especialista_nombre ? String(raw.firma_especialista_nombre) : undefined,
   };
 }
 

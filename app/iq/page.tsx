@@ -90,7 +90,7 @@ function HairScoreBar({ score }: { score: number }) {
   const pct = Math.min(100, Math.max(0, score));
   return (
     <div className="flex items-center gap-2">
-      <span className={cn("text-sm font-bold w-8 text-right tabular-nums", scoreTextColor(score))}>
+      <span className={cn("text-sm font-bold w-8 text-right tabular-nums", score > 0 ? scoreTextColor(score) : "text-zinc-600")}>
         {score || "—"}
       </span>
       <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
@@ -281,8 +281,8 @@ function IQPanelInner({ clientProfileId, onClose }: IQPanelProps) {
               </div>
               {perfil ? (
                 <div className="flex items-center gap-3">
-                  <span className={cn("text-2xl font-black tabular-nums", scoreTextColor(perfil.score_general_capilar))}>
-                    {perfil.score_general_capilar}
+                  <span className={cn("text-2xl font-black tabular-nums", perfil.score_general_capilar > 0 ? scoreTextColor(perfil.score_general_capilar) : "text-zinc-500")}>
+                    {perfil.score_general_capilar || "—"}
                   </span>
                   <span className="text-zinc-600 text-xs">Hair Score</span>
                   {perfil.riesgo_abandono && (
@@ -410,6 +410,29 @@ function IQPanelInner({ clientProfileId, onClose }: IQPanelProps) {
                       <p className="text-zinc-500 text-xs text-center py-1.5">{label}</p>
                     </div>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* Firma digital */}
+            {(perfil.firma_cliente_timestamp || perfil.firma_especialista_nombre) && (
+              <section>
+                <h3 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                  Firma Digital
+                </h3>
+                <div className="glass-card border border-white/7 px-4 py-3 rounded-xl space-y-1.5">
+                  {perfil.firma_especialista_nombre && (
+                    <p className="text-zinc-300 text-xs">
+                      <span className="text-zinc-500">Especialista: </span>
+                      {perfil.firma_especialista_nombre}
+                    </p>
+                  )}
+                  {perfil.firma_cliente_timestamp && (
+                    <p className="text-zinc-300 text-xs">
+                      <span className="text-zinc-500">Firmado: </span>
+                      {formatDate(perfil.firma_cliente_timestamp)}
+                    </p>
+                  )}
                 </div>
               </section>
             )}

@@ -35,6 +35,9 @@ export interface IQClienteSummary {
   // Treatment info
   sesiones_recomendadas: string;
   procedimiento_a_realizar: string;
+  // Digital signature
+  firma_cliente_timestamp?: string;
+  firma_especialista_nombre?: string;
   // CRM fields
   visit_count: number;
   total_spent: number;
@@ -78,6 +81,9 @@ export interface PerfilCapilarV2 {
   // Optional before/after photos
   foto_antes_url?: string;
   foto_despues_url?: string;
+  // Digital signature
+  firma_cliente_timestamp?: string;
+  firma_especialista_nombre?: string;
 }
 
 export interface HistorialCapilarSnapshot {

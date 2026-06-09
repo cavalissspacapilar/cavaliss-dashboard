@@ -51,6 +51,8 @@ function mapProfile(p: Record<string, unknown>, clientMap: Map<string, ClientDat
     problema_seborrea: p.problema_seborrea === true,
     sesiones_recomendadas: String(p.sesiones_recomendadas ?? ""),
     procedimiento_a_realizar: String(p.procedimiento_a_realizar ?? ""),
+    firma_cliente_timestamp: p.firma_cliente_timestamp ? String(p.firma_cliente_timestamp) : undefined,
+    firma_especialista_nombre: p.firma_especialista_nombre ? String(p.firma_especialista_nombre) : undefined,
     visit_count: Number(p.visit_count ?? 0),
     total_spent: Number(p.total_spent ?? 0),
     loyalty_tier: String(p.loyalty_tier ?? ""),
