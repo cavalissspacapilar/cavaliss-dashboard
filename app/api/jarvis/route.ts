@@ -567,10 +567,18 @@ export async function POST(req: NextRequest) {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        console.error('[/api/jarvis] Anthropic error:', res.status, err);
+        const errText = await res.text();
+        console.error('[/api/jarvis] Anthropic error:', res.status, errText);
+        let errMsg = `Error de IA: ${res.status}`;
+        try {
+          const errJson = JSON.parse(errText) as { error?: { message?: string; type?: string } };
+          if (errJson?.error?.message) errMsg += ` — ${errJson.error.message}`;
+          else if (errText) errMsg += ` — ${errText.substring(0, 200)}`;
+        } catch {
+          if (errText) errMsg += ` — ${errText.substring(0, 200)}`;
+        }
         return NextResponse.json(
-          { response: `Error de IA: ${res.status}. Intenta de nuevo.`, toolsUsed },
+          { response: errMsg, toolsUsed },
           { status: 500 }
         );
       }
