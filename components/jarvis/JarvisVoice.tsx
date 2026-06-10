@@ -125,9 +125,9 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: text, history: convRef.current }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = (await res.json()) as { response: string; toolsUsed: string[] };
+      if (!res.ok) throw new Error(data?.response || `HTTP ${res.status}`);
       const txt  = data.response || 'Sin respuesta.';
 
       setResponse(txt);
@@ -143,8 +143,8 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
       ].slice(0, 5));
 
       speak(txt);
-    } catch {
-      const msg = 'Error al conectar con JARVIS. Verifica la conexión.';
+    } catch (e) {
+      const msg = (e instanceof Error && e.message) ? e.message : 'Error al conectar con JARVIS. Verifica la conexión.';
       setError(msg);
       setResponse(msg);
       setStatus('error');

@@ -524,11 +524,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json() as { command: string; history?: JarvisMessage[] };
     const { command, history = [] } = body;
 
+    console.log('[JARVIS] command received:', command?.substring(0, 80));
+
     if (!command?.trim()) {
       return NextResponse.json({ response: 'No recibí ningún comando.', toolsUsed: [] });
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
+    console.log('[JARVIS] ANTHROPIC_API_KEY exists:', !!apiKey);
     if (!apiKey) {
       return NextResponse.json(
         { response: 'JARVIS no está configurado: falta ANTHROPIC_API_KEY.', toolsUsed: [] },
