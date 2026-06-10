@@ -218,6 +218,12 @@ body {
   animation: fadeIn 0.4s ease-out;
 }
 
+/* JARVIS voice bars */
+@keyframes jarvisVoiceBar {
+  0%   { transform: scaleY(0.18); }
+  100% { transform: scaleY(1); }
+}
+
 /* Gauge arc */
 .gauge-bg {
   fill: none;

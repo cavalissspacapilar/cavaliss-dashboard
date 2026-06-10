@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Bell, Download, Search } from "lucide-react";
 import { formatDateSpanish, formatTimeSpanish } from "@/lib/utils";
+import JarvisButton from "@/components/jarvis/JarvisButton";
 
 interface HeaderProps {
   collapsed: boolean;
@@ -40,6 +41,9 @@ export default function Header({ collapsed: _collapsed }: HeaderProps) {
 
       {/* Right: actions */}
       <div className="flex items-center gap-3">
+        {/* JARVIS voice assistant */}
+        <JarvisButton />
+
         <button
           className="flex items-center gap-2 text-xs text-zinc-400 hover:text-gold border border-white/6 hover:border-gold/25 rounded-xl px-3 py-2 transition-all duration-200"
           title="Exportar reporte PDF"
